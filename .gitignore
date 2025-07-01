@@ -1,0 +1,25 @@
+# Test artifacts
+tests/screenshots/current/
+tests/screenshots/diff/
+tests/reports/
+*.pyc
+__pycache__/
+.pytest_cache/
+
+# Environment
+.env.local
+*.log
+
+# Dependencies
+node_modules/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
