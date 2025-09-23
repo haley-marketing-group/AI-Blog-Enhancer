@@ -19,12 +19,49 @@
             this.initFAQAccordion();
             this.initSmoothScrolling();
             this.initAccessibility();
+            this.initTOCProgress();
+            this.initAudioControls();
+            this.initTakeawaysInteractions();
         },
 
         /**
          * Initialize FAQ accordion functionality
          */
         initFAQAccordion: function() {
+            // New accordion button functionality
+            $(document).on('click', '[data-hmg-faq-toggle]', function(e) {
+                e.preventDefault();
+                
+                const $button = $(this);
+                const $content = $('#' + $button.attr('aria-controls'));
+                const isExpanded = $button.attr('aria-expanded') === 'true';
+                
+                // Toggle states
+                $button.toggleClass('hmg-ai-active');
+                $button.attr('aria-expanded', !isExpanded);
+                
+                if (isExpanded) {
+                    $content.slideUp(300, function() {
+                        $content.removeClass('hmg-ai-active').hide();
+                    });
+                } else {
+                    $content.addClass('hmg-ai-active').slideDown(300);
+                }
+                
+                // Close other items in accordion (optional)
+                const $accordion = $button.closest('.hmg-ai-faq-accordion');
+                if ($accordion.length) {
+                    $accordion.find('[data-hmg-faq-toggle]').not($button).each(function() {
+                        const $otherButton = $(this);
+                        const $otherContent = $('#' + $otherButton.attr('aria-controls'));
+                        
+                        $otherButton.removeClass('hmg-ai-active').attr('aria-expanded', 'false');
+                        $otherContent.removeClass('hmg-ai-active').slideUp(300);
+                    });
+                }
+            });
+
+            // Legacy support for old FAQ structure
             $(document).on('click', '.hmg-ai-faq-question', function(e) {
                 e.preventDefault();
                 
@@ -54,6 +91,26 @@
          * Initialize smooth scrolling for TOC links
          */
         initSmoothScrolling: function() {
+            $(document).on('click', '[data-hmg-smooth-scroll]', function(e) {
+                e.preventDefault();
+                
+                const target = $(this.getAttribute('href'));
+                
+                if (target.length) {
+                    $('html, body').animate({
+                        scrollTop: target.offset().top - 80
+                    }, 600, 'swing', function() {
+                        // Update active state for sidebar TOC
+                        $('.hmg-ai-toc-sidebar-item').removeClass('active');
+                        $('[data-target="' + target.attr('id') + '"]').addClass('active');
+                    });
+                    
+                    // Update focus for accessibility
+                    target.focus();
+                }
+            });
+
+            // Legacy support
             $(document).on('click', '.hmg-ai-toc a[href^="#"]', function(e) {
                 e.preventDefault();
                 
@@ -158,10 +215,139 @@
         },
 
         /**
-         * Initialize audio player enhancements
+         * Initialize TOC progress tracking
+         */
+        initTOCProgress: function() {
+            const $progressBar = $('.hmg-ai-toc-progress-bar');
+            if (!$progressBar.length) return;
+
+            $(window).on('scroll', function() {
+                const scrollTop = $(window).scrollTop();
+                const docHeight = $(document).height() - $(window).height();
+                const scrollPercent = (scrollTop / docHeight) * 100;
+                
+                $progressBar.css('width', Math.min(scrollPercent, 100) + '%');
+                
+                // Update active TOC items based on scroll position
+                let activeSection = null;
+                $('[data-hmg-smooth-scroll]').each(function() {
+                    const target = $($(this).attr('href'));
+                    if (target.length && target.offset().top <= scrollTop + 100) {
+                        activeSection = target.attr('id');
+                    }
+                });
+                
+                if (activeSection) {
+                    $('.hmg-ai-toc-sidebar-item').removeClass('active');
+                    $('[data-target="' + activeSection + '"]').addClass('active');
+                }
+            });
+        },
+
+        /**
+         * Initialize audio controls
+         */
+        initAudioControls: function() {
+            // Custom play/pause for minimal style
+            $(document).on('click', '[data-hmg-audio-toggle]', function(e) {
+                e.preventDefault();
+                
+                const $button = $(this);
+                const $audio = $button.siblings('[data-hmg-audio-source]')[0];
+                const $playIcon = $button.find('.hmg-ai-play-icon');
+                const $pauseIcon = $button.find('.hmg-ai-pause-icon');
+                
+                if ($audio.paused) {
+                    $audio.play();
+                    $playIcon.hide();
+                    $pauseIcon.show();
+                } else {
+                    $audio.pause();
+                    $playIcon.show();
+                    $pauseIcon.hide();
+                }
+            });
+
+            // Progress bar updates
+            $(document).on('timeupdate', '[data-hmg-audio-source]', function() {
+                const audio = this;
+                const $progressBar = $(this).siblings().find('[data-hmg-audio-progress]');
+                
+                if (audio.duration) {
+                    const progress = (audio.currentTime / audio.duration) * 100;
+                    $progressBar.css('width', progress + '%');
+                }
+            });
+
+            // Speed controls
+            $(document).on('click', '[data-hmg-audio-speed]', function(e) {
+                e.preventDefault();
+                
+                const $button = $(this);
+                const $audio = $button.closest('[data-hmg-component="audio"]').find('audio')[0];
+                
+                if ($audio) {
+                    const speeds = [1, 1.25, 1.5, 2, 0.75];
+                    const currentSpeed = $audio.playbackRate;
+                    const currentIndex = speeds.indexOf(currentSpeed);
+                    const nextIndex = (currentIndex + 1) % speeds.length;
+                    const newSpeed = speeds[nextIndex];
+                    
+                    $audio.playbackRate = newSpeed;
+                    $button.text(newSpeed + 'x');
+                }
+            });
+
+            // Error handling
+            $(document).on('error', '.hmg-ai-audio-element', function() {
+                console.error('Audio playback error');
+                $(this).closest('[data-hmg-component="audio"]')
+                       .append('<p style="color: red; text-align: center; margin-top: 10px;">Audio playback error. Please try again later.</p>');
+            });
+        },
+
+        /**
+         * Initialize takeaways interactions
+         */
+        initTakeawaysInteractions: function() {
+            // Add hover effects and animations
+            $('.hmg-ai-takeaway-item, .hmg-ai-takeaway-card').on('mouseenter', function() {
+                $(this).addClass('hmg-ai-hover');
+            }).on('mouseleave', function() {
+                $(this).removeClass('hmg-ai-hover');
+            });
+
+            // Add click-to-highlight functionality
+            $(document).on('click', '.hmg-ai-takeaway-item, .hmg-ai-takeaway-card', function() {
+                const $item = $(this);
+                $item.toggleClass('hmg-ai-highlighted');
+                
+                // Optional: Copy to clipboard functionality
+                if ($item.hasClass('hmg-ai-highlighted')) {
+                    const text = $item.find('.hmg-ai-takeaway-content, .hmg-ai-card-content').text().trim();
+                    
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).then(function() {
+                            // Show temporary feedback
+                            const $feedback = $('<span class="hmg-ai-copy-feedback">Copied!</span>');
+                            $item.append($feedback);
+                            
+                            setTimeout(function() {
+                                $feedback.fadeOut(function() {
+                                    $feedback.remove();
+                                });
+                            }, 2000);
+                        });
+                    }
+                }
+            });
+        },
+
+        /**
+         * Initialize audio player enhancements (legacy)
          */
         initAudioPlayer: function() {
-            $('.hmg-ai-audio-player').each(function() {
+            $('.hmg-ai-audio-player, .hmg-ai-audio-element').each(function() {
                 const $player = $(this);
                 
                 // Add custom controls if needed
@@ -175,7 +361,7 @@
                 
                 $player.on('error', function() {
                     console.error('Audio playback error');
-                    $player.closest('.hmg-ai-audio-player-container')
+                    $player.closest('.hmg-ai-audio, .hmg-ai-audio-player-container')
                            .append('<p style="color: red;">Audio playback error. Please try again later.</p>');
                 });
             });

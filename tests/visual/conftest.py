@@ -12,8 +12,11 @@ from wordpress_helper import WordPressHelper
 @pytest.fixture(scope="session")
 def test_config():
     """Test configuration"""
+    # Use host.docker.internal for Selenium containers to access host machine
+    wordpress_url = os.getenv('WORDPRESS_URL', 'http://host.docker.internal:8085')
+    
     return {
-        'wordpress_url': os.getenv('WORDPRESS_URL', 'http://localhost:8080'),
+        'wordpress_url': wordpress_url,
         'admin_user': os.getenv('WP_ADMIN_USER', 'admin'),
         'admin_pass': os.getenv('WP_ADMIN_PASS', 'admin123'),
         'selenium_hub': os.getenv('SELENIUM_HUB', 'http://localhost:4444/wd/hub'),

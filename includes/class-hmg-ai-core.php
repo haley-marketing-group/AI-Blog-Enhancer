@@ -127,6 +127,10 @@ class HMG_AI_Core {
          * Load service classes
          */
         require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-auth-service.php';
+        require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-gemini-service.php';
+        require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-openai-service.php';
+        require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-claude-service.php';
+        require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-ai-service-manager.php';
 
         $this->loader = new HMG_AI_Loader();
     }
@@ -167,6 +171,9 @@ class HMG_AI_Core {
         // Add meta boxes for posts/pages
         $this->loader->add_action('add_meta_boxes', $plugin_admin, 'add_meta_boxes');
         $this->loader->add_action('save_post', $plugin_admin, 'save_post_meta', 10, 2);
+        
+        // Ensure meta boxes work with block editor
+        $this->loader->add_action('enqueue_block_editor_assets', $plugin_admin, 'enqueue_block_editor_assets');
 
         // AJAX handlers for content generation
         $this->loader->add_action('wp_ajax_hmg_generate_takeaways', $plugin_admin, 'ajax_generate_takeaways');
@@ -177,6 +184,8 @@ class HMG_AI_Core {
         // Settings page AJAX handlers
         $this->loader->add_action('wp_ajax_hmg_validate_api_key', $plugin_admin, 'ajax_validate_api_key');
         $this->loader->add_action('wp_ajax_hmg_get_usage_stats', $plugin_admin, 'ajax_get_usage_stats');
+        $this->loader->add_action('wp_ajax_hmg_test_ai_providers', $plugin_admin, 'ajax_test_ai_providers');
+        $this->loader->add_action('wp_ajax_hmg_save_ai_content', $plugin_admin, 'ajax_save_ai_content');
 
         // Plugin action links
         $this->loader->add_filter('plugin_action_links_' . HMG_AI_BLOG_ENHANCER_PLUGIN_BASENAME, $plugin_admin, 'add_action_links');
@@ -202,8 +211,8 @@ class HMG_AI_Core {
         // Register shortcodes
         $this->loader->add_action('init', $plugin_public, 'register_shortcodes');
 
-        // Content filters for automatic insertion
-        $this->loader->add_filter('the_content', $plugin_public, 'maybe_add_ai_content', 20);
+        // Content filters for automatic insertion (DISABLED - using shortcodes instead)
+        // $this->loader->add_filter('the_content', $plugin_public, 'maybe_add_ai_content', 20);
 
         // REST API endpoints for frontend interactions
         $this->loader->add_action('rest_api_init', $plugin_public, 'register_rest_routes');

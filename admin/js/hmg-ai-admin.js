@@ -31,11 +31,20 @@
             $(document).on('click', '.hmg-ai-generate-toc', this.generateTOC);
             $(document).on('click', '.hmg-ai-generate-audio', this.generateAudio);
             
+            // Content editing buttons
+            $(document).on('click', '.hmg-ai-edit-content', this.editContent);
+            $(document).on('click', '.hmg-ai-save-content', this.saveContent);
+            $(document).on('click', '.hmg-ai-cancel-edit', this.cancelEdit);
+            $(document).on('click', '.hmg-ai-insert-shortcode', this.insertShortcode);
+            
             // Settings validation
             $(document).on('click', '.hmg-ai-validate-api-key', this.validateApiKey);
+            $(document).on('click', '.hmg-ai-test-providers', this.testAIProviders);
             
-            // Form submissions
-            $(document).on('submit', '.hmg-ai-settings-form', this.saveSettings);
+            // Spending limit toggle
+            $(document).on('change', 'input[name="spending_limit_type"]', this.toggleCustomLimit);
+            
+            // Form submissions - removed to allow normal PHP processing
             
             // Usage stats refresh
             $(document).on('click', '.hmg-ai-refresh-stats', this.loadUsageStats);
@@ -379,22 +388,41 @@
         },
 
         /**
-         * Insert generated content into editor
+         * Insert generated content into editor as shortcodes
          */
         insertGeneratedContent: function(type, content) {
+            // Generate appropriate shortcode based on content type
+            let shortcode = '';
+            switch(type) {
+                case 'takeaways':
+                    shortcode = '[hmg_ai_takeaways style="default"]';
+                    break;
+                case 'faq':
+                    shortcode = '[hmg_ai_faq style="accordion"]';
+                    break;
+                case 'toc':
+                    shortcode = '[hmg_ai_toc style="numbered"]';
+                    break;
+                case 'audio':
+                    shortcode = '[hmg_ai_audio style="player"]';
+                    break;
+                default:
+                    shortcode = `[hmg_ai_${type}]`;
+            }
+            
             // Try to insert into various editors
             
             // Block editor (Gutenberg)
             if (typeof wp !== 'undefined' && wp.data && wp.data.select('core/editor')) {
                 const currentContent = wp.data.select('core/editor').getEditedPostContent();
-                const newContent = currentContent + '\n\n' + content;
+                const newContent = currentContent + '\n\n' + shortcode + '\n\n';
                 wp.data.dispatch('core/editor').editPost({ content: newContent });
                 return;
             }
             
             // Classic editor
             if (typeof tinyMCE !== 'undefined' && tinyMCE.activeEditor) {
-                tinyMCE.activeEditor.execCommand('mceInsertContent', false, content);
+                tinyMCE.activeEditor.execCommand('mceInsertContent', false, '\n\n' + shortcode + '\n\n');
                 return;
             }
             
@@ -402,7 +430,7 @@
             const $textarea = $('#content, #post-content').first();
             if ($textarea.length) {
                 const currentContent = $textarea.val();
-                $textarea.val(currentContent + '\n\n' + content);
+                $textarea.val(currentContent + '\n\n' + shortcode + '\n\n');
             }
         },
 
@@ -445,31 +473,83 @@
             });
         },
 
+
+
         /**
-         * Save settings form
+         * Test AI providers
          */
-        saveSettings: function(e) {
+        testAIProviders: function(e) {
             e.preventDefault();
             
-            const $form = $(this);
-            const $submitButton = $form.find('[type="submit"]');
+            const $button = $(this);
             
-            HMGAIAdmin.setLoadingState($submitButton, true);
+            // Check if we have the necessary variables
+            if (typeof hmg_ai_ajax === 'undefined') {
+                alert('Error: Plugin JavaScript not properly loaded. Please refresh the page.');
+                return;
+            }
+            
+            HMGAIAdmin.setLoadingState($button, true);
             
             $.ajax({
-                url: $form.attr('action'),
+                url: hmg_ai_ajax.ajax_url,
                 type: 'POST',
-                data: $form.serialize(),
-                success: function(response) {
-                    HMGAIAdmin.showNotice('success', 'Settings saved successfully!');
+                data: {
+                    action: 'hmg_test_ai_providers',
+                    nonce: hmg_ai_ajax.nonce
                 },
-                error: function() {
-                    HMGAIAdmin.showNotice('error', 'Failed to save settings. Please try again.');
+                success: function(response) {
+                    console.log('Provider test response:', response);
+                    
+                    if (response.success) {
+                        let message = 'Provider Test Results:\n\n';
+                        
+                        if (response.data && response.data.providers) {
+                            Object.keys(response.data.providers).forEach(function(providerKey) {
+                                const provider = response.data.providers[providerKey];
+                                const status = provider.success ? '✅ Success' : '❌ Failed';
+                                message += `${provider.name}: ${status}\n`;
+                                if (!provider.success) {
+                                    message += `  Error: ${provider.message}\n`;
+                                }
+                                message += '\n';
+                            });
+                        } else {
+                            message = 'No provider data received.';
+                        }
+                        
+                        HMGAIAdmin.showNotice('success', 'Provider tests completed.');
+                        console.log(message);
+                        alert(message);
+                    } else {
+                        const errorMsg = response.data ? response.data.message : 'Unknown error occurred';
+                        HMGAIAdmin.showNotice('error', 'Failed to test providers: ' + errorMsg);
+                        console.error('Provider test error:', response);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX error:', xhr, status, error);
+                    HMGAIAdmin.showNotice('error', 'Failed to test providers. Check browser console for details.');
+                    alert('AJAX Error: ' + error + '\nStatus: ' + status + '\nPlease check browser console for more details.');
                 },
                 complete: function() {
-                    HMGAIAdmin.setLoadingState($submitButton, false);
+                    HMGAIAdmin.setLoadingState($button, false);
                 }
             });
+        },
+
+        /**
+         * Toggle custom spending limit section
+         */
+        toggleCustomLimit: function() {
+            const selectedValue = $('input[name="spending_limit_type"]:checked').val();
+            const $customSection = $('#custom-limit-section');
+            
+            if (selectedValue === 'custom') {
+                $customSection.slideDown();
+            } else {
+                $customSection.slideUp();
+            }
         },
 
         /**
@@ -480,6 +560,101 @@
             setTimeout(function() {
                 HMGAIAdmin.loadUsageStats();
             }, 1000);
+        },
+
+        /**
+         * Edit content functionality
+         */
+        editContent: function(e) {
+            e.preventDefault();
+            const $button = $(this);
+            const type = $button.data('type');
+            
+            // Hide preview and show editor
+            $(`#${type}-preview`).hide();
+            $(`#${type}-editor`).show();
+            
+            // Focus on textarea
+            $(`#${type}-content`).focus();
+        },
+
+        /**
+         * Save edited content
+         */
+        saveContent: function(e) {
+            e.preventDefault();
+            const $button = $(this);
+            const type = $button.data('type');
+            const postId = $button.data('post-id');
+            const content = $(`#${type}-content`).val();
+            
+            if (!content.trim()) {
+                HMGAIAdmin.showNotice('error', 'Content cannot be empty.');
+                return;
+            }
+            
+            HMGAIAdmin.setLoadingState($button, true);
+            
+            // Save via AJAX
+            $.ajax({
+                url: hmg_ai_ajax.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'hmg_save_ai_content',
+                    nonce: hmg_ai_ajax.nonce,
+                    post_id: postId,
+                    content_type: type,
+                    content: content
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Update preview
+                        const previewText = content.length > 150 ? content.substring(0, 150) + '...' : content;
+                        $(`#${type}-preview`).html(previewText);
+                        
+                        // Hide editor and show preview
+                        $(`#${type}-editor`).hide();
+                        $(`#${type}-preview`).show();
+                        
+                        HMGAIAdmin.showNotice('success', 'Content saved successfully!');
+                    } else {
+                        HMGAIAdmin.showNotice('error', response.data.message || 'Failed to save content.');
+                    }
+                },
+                error: function() {
+                    HMGAIAdmin.showNotice('error', 'Failed to save content.');
+                },
+                complete: function() {
+                    HMGAIAdmin.setLoadingState($button, false);
+                }
+            });
+        },
+
+        /**
+         * Cancel content editing
+         */
+        cancelEdit: function(e) {
+            e.preventDefault();
+            const $button = $(this);
+            const type = $button.data('type');
+            
+            // Hide editor and show preview
+            $(`#${type}-editor`).hide();
+            $(`#${type}-preview`).show();
+        },
+
+        /**
+         * Insert shortcode into editor
+         */
+        insertShortcode: function(e) {
+            e.preventDefault();
+            const $button = $(this);
+            const type = $button.data('type');
+            
+            // Insert shortcode using existing function
+            HMGAIAdmin.insertGeneratedContent(type, '');
+            
+            HMGAIAdmin.showNotice('success', `${type.charAt(0).toUpperCase() + type.slice(1)} shortcode inserted!`);
         }
     };
 

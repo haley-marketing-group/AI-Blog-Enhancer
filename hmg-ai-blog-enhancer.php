@@ -61,6 +61,13 @@ function deactivate_hmg_ai_blog_enhancer() {
 }
 
 /**
+ * Load debug helper for meta box troubleshooting
+ */
+if (is_admin()) {
+    require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'debug-metabox-visibility.php';
+}
+
+/**
  * Register activation and deactivation hooks
  */
 register_activation_hook(__FILE__, 'activate_hmg_ai_blog_enhancer');

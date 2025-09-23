@@ -52,6 +52,15 @@ class HMG_AI_Admin {
     private $auth_service;
 
     /**
+     * The AI service manager instance.
+     *
+     * @since    1.0.0
+     * @access   private
+     * @var      HMG_AI_Service_Manager    $ai_service_manager    AI service manager instance.
+     */
+    private $ai_service_manager;
+
+    /**
      * Initialize the class and set its properties.
      *
      * @since    1.0.0
@@ -62,6 +71,7 @@ class HMG_AI_Admin {
         $this->plugin_name = $plugin_name;
         $this->version = $version;
         $this->auth_service = new HMG_AI_Auth_Service();
+        $this->ai_service_manager = new HMG_AI_Service_Manager();
     }
 
     /**
@@ -115,6 +125,52 @@ class HMG_AI_Admin {
                     'success' => __('Content generated successfully!', 'hmg-ai-blog-enhancer'),
                 )
             )
+        );
+    }
+
+    /**
+     * Enqueue block editor assets to ensure meta boxes work properly
+     *
+     * @since    1.0.0
+     */
+    public function enqueue_block_editor_assets() {
+        // Only enqueue on post edit screens
+        $current_screen = get_current_screen();
+        if (!$current_screen || !in_array($current_screen->post_type, ['post', 'page'])) {
+            return;
+        }
+
+        // Enqueue our admin script for block editor compatibility
+        wp_enqueue_script(
+            $this->plugin_name . '-block-editor',
+            HMG_AI_BLOG_ENHANCER_PLUGIN_URL . 'admin/js/hmg-ai-admin.js',
+            array('wp-blocks', 'wp-element', 'wp-editor', 'jquery'),
+            $this->version,
+            true
+        );
+
+        // Localize script for AJAX
+        wp_localize_script(
+            $this->plugin_name . '-block-editor',
+            'hmg_ai_ajax',
+            array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('hmg_ai_nonce'),
+                'plugin_url' => HMG_AI_BLOG_ENHANCER_PLUGIN_URL,
+                'strings' => array(
+                    'generating' => __('Generating content...', 'hmg-ai-blog-enhancer'),
+                    'error' => __('An error occurred. Please try again.', 'hmg-ai-blog-enhancer'),
+                    'success' => __('Content generated successfully!', 'hmg-ai-blog-enhancer'),
+                )
+            )
+        );
+
+        // Enqueue admin styles for block editor
+        wp_enqueue_style(
+            $this->plugin_name . '-block-editor',
+            HMG_AI_BLOG_ENHANCER_PLUGIN_URL . 'admin/css/hmg-ai-admin.css',
+            array(),
+            $this->version
         );
     }
 
@@ -198,14 +254,69 @@ class HMG_AI_Admin {
      * @since    1.0.0
      */
     public function add_meta_boxes() {
-        add_meta_box(
-            'hmg-ai-content-generator',
-            __('AI Content Generator', 'hmg-ai-blog-enhancer'),
-            array($this, 'display_content_generator_meta_box'),
-            array('post', 'page'),
-            'side',
-            'high'
-        );
+        // Debug logging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('HMG AI: add_meta_boxes called');
+        }
+        
+        // Check if we're in the block editor
+        $current_screen = get_current_screen();
+        $is_block_editor = $current_screen && method_exists($current_screen, 'is_block_editor') && $current_screen->is_block_editor();
+        
+        // For block editor, we need to register the meta box differently
+        if ($is_block_editor) {
+            // Register meta box for block editor
+            add_meta_box(
+                'hmg-ai-content-generator',
+                __('AI Content Generator', 'hmg-ai-blog-enhancer'),
+                array($this, 'display_content_generator_meta_box'),
+                array('post', 'page'),
+                'side',
+                'high',
+                array(
+                    '__block_editor_compatible_meta_box' => true,
+                    '__back_compat_meta_box' => false,
+                )
+            );
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('HMG AI: Meta box added for block editor');
+            }
+        } else {
+            // Classic editor
+            add_meta_box(
+                'hmg-ai-content-generator',
+                __('AI Content Generator', 'hmg-ai-blog-enhancer'),
+                array($this, 'display_content_generator_meta_box'),
+                array('post', 'page'),
+                'side',
+                'high'
+            );
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('HMG AI: Meta box added for classic editor');
+            }
+        }
+        
+        // Force meta box to be visible by default
+        if ($current_screen && in_array($current_screen->post_type, ['post', 'page'])) {
+            // Get user meta for hidden meta boxes
+            $user_id = get_current_user_id();
+            $hidden_meta_boxes = get_user_meta($user_id, 'metaboxhidden_' . $current_screen->id, true);
+            
+            if (is_array($hidden_meta_boxes)) {
+                // Remove our meta box from hidden list if it's there
+                $key = array_search('hmg-ai-content-generator', $hidden_meta_boxes);
+                if ($key !== false) {
+                    unset($hidden_meta_boxes[$key]);
+                    update_user_meta($user_id, 'metaboxhidden_' . $current_screen->id, $hidden_meta_boxes);
+                    
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('HMG AI: Removed meta box from hidden list');
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -261,16 +372,53 @@ class HMG_AI_Admin {
      * @since    1.0.0
      */
     public function admin_notices() {
-        $options = get_option('hmg_ai_blog_enhancer_options', array());
+        $auth_status = $this->auth_service->get_auth_status();
         
-        // Show notice if API key is not set
-        if (empty($options['api_key'])) {
+        // Show notice if no authentication is configured
+        if (!$auth_status['authenticated']) {
             echo '<div class="notice notice-warning is-dismissible">';
             echo '<p>' . sprintf(
-                __('HMG AI Blog Enhancer requires an API key to function. <a href="%s">Configure it now</a>.', 'hmg-ai-blog-enhancer'),
+                __('HMG AI Blog Enhancer requires API key configuration to function. <a href="%s">Configure it now</a>.', 'hmg-ai-blog-enhancer'),
                 admin_url('admin.php?page=hmg-ai-settings')
             ) . '</p>';
+            echo '<p><small>' . esc_html($auth_status['message']) . '</small></p>';
             echo '</div>';
+        }
+        
+        // Show meta box troubleshooting notice on post edit screens
+        $current_screen = get_current_screen();
+        if ($current_screen && in_array($current_screen->id, ['post', 'page']) && isset($_GET['hmg_metabox_help'])) {
+            echo '<div class="notice notice-info is-dismissible">';
+            echo '<h3>' . __('HMG AI Meta Box Troubleshooting', 'hmg-ai-blog-enhancer') . '</h3>';
+            echo '<p><strong>' . __('Can\'t see the AI Content Generator meta box?', 'hmg-ai-blog-enhancer') . '</strong></p>';
+            echo '<ol>';
+            echo '<li><strong>' . __('Check Screen Options:', 'hmg-ai-blog-enhancer') . '</strong> ' . __('Click "Screen Options" at the top right of this page and make sure "AI Content Generator" is checked.', 'hmg-ai-blog-enhancer') . '</li>';
+            echo '<li><strong>' . __('Look in the Sidebar:', 'hmg-ai-blog-enhancer') . '</strong> ' . __('The meta box appears in the right sidebar of the post editor.', 'hmg-ai-blog-enhancer') . '</li>';
+            echo '<li><strong>' . __('Try Refreshing:', 'hmg-ai-blog-enhancer') . '</strong> ' . __('Refresh the page or try editing a different post.', 'hmg-ai-blog-enhancer') . '</li>';
+            echo '<li><strong>' . __('Check Permissions:', 'hmg-ai-blog-enhancer') . '</strong> ' . __('Make sure you have Editor or Administrator role.', 'hmg-ai-blog-enhancer') . '</li>';
+            echo '</ol>';
+            echo '<p>';
+            echo '<a href="' . remove_query_arg('hmg_metabox_help') . '" class="button button-secondary">' . __('Hide This Help', 'hmg-ai-blog-enhancer') . '</a> ';
+            echo '<a href="' . add_query_arg('hmg_debug', '1') . '" class="button button-primary">' . __('Run Debug Check', 'hmg-ai-blog-enhancer') . '</a>';
+            echo '</p>';
+            echo '</div>';
+        }
+        
+        // Add debug link to admin bar if not already present
+        if ($current_screen && in_array($current_screen->id, ['post', 'page']) && !isset($_GET['hmg_metabox_help']) && !isset($_GET['hmg_debug'])) {
+            // Only show this notice once per session
+            if (!get_transient('hmg_ai_metabox_notice_shown_' . get_current_user_id())) {
+                echo '<div class="notice notice-info is-dismissible">';
+                echo '<p>';
+                echo '<strong>' . __('HMG AI Blog Enhancer:', 'hmg-ai-blog-enhancer') . '</strong> ';
+                echo __('Look for the "AI Content Generator" box in the right sidebar. ', 'hmg-ai-blog-enhancer');
+                echo '<a href="' . add_query_arg('hmg_metabox_help', '1') . '">' . __('Need help finding it?', 'hmg-ai-blog-enhancer') . '</a>';
+                echo '</p>';
+                echo '</div>';
+                
+                // Set transient to show notice only once per hour per user
+                set_transient('hmg_ai_metabox_notice_shown_' . get_current_user_id(), true, HOUR_IN_SECONDS);
+            }
         }
     }
 
@@ -290,11 +438,33 @@ class HMG_AI_Admin {
             wp_die(__('Insufficient permissions', 'hmg-ai-blog-enhancer'));
         }
 
-        // Placeholder response - will be implemented with actual AI service
-        wp_send_json_success(array(
-            'content' => '<div class="hmg-ai-takeaways"><h3>Key Takeaways</h3><ul><li>Sample takeaway 1</li><li>Sample takeaway 2</li></ul></div>',
-            'message' => __('Takeaways generated successfully!', 'hmg-ai-blog-enhancer')
-        ));
+        // Get content and post ID
+        $content = sanitize_textarea_field($_POST['content'] ?? '');
+        $post_id = (int) ($_POST['post_id'] ?? 0);
+
+        if (empty($content)) {
+            wp_send_json_error(array(
+                'message' => __('No content provided for analysis.', 'hmg-ai-blog-enhancer')
+            ));
+        }
+
+        // Generate takeaways using AI service manager
+        $result = $this->ai_service_manager->generate_content('takeaways', $content, $post_id);
+
+        if ($result['success']) {
+            wp_send_json_success(array(
+                'content' => $result['content'],
+                'message' => $result['message'],
+                'provider_used' => $result['provider_name'] ?? 'AI Service',
+                'tokens_used' => $result['tokens_used'] ?? 0,
+                'generation_time' => $result['generation_time'] ?? 0,
+                'cached' => $result['cached'] ?? false
+            ));
+        } else {
+            wp_send_json_error(array(
+                'message' => $result['error']
+            ));
+        }
     }
 
     /**
@@ -313,11 +483,33 @@ class HMG_AI_Admin {
             wp_die(__('Insufficient permissions', 'hmg-ai-blog-enhancer'));
         }
 
-        // Placeholder response - will be implemented with actual AI service
-        wp_send_json_success(array(
-            'content' => '<div class="hmg-ai-faq"><h3>Frequently Asked Questions</h3><div class="faq-item"><h4>Sample Question?</h4><p>Sample answer.</p></div></div>',
-            'message' => __('FAQ generated successfully!', 'hmg-ai-blog-enhancer')
-        ));
+        // Get content and post ID
+        $content = sanitize_textarea_field($_POST['content'] ?? '');
+        $post_id = (int) ($_POST['post_id'] ?? 0);
+
+        if (empty($content)) {
+            wp_send_json_error(array(
+                'message' => __('No content provided for analysis.', 'hmg-ai-blog-enhancer')
+            ));
+        }
+
+        // Generate FAQ using AI service manager
+        $result = $this->ai_service_manager->generate_content('faq', $content, $post_id);
+
+        if ($result['success']) {
+            wp_send_json_success(array(
+                'content' => $result['content'],
+                'message' => $result['message'],
+                'provider_used' => $result['provider_name'] ?? 'AI Service',
+                'tokens_used' => $result['tokens_used'] ?? 0,
+                'generation_time' => $result['generation_time'] ?? 0,
+                'cached' => $result['cached'] ?? false
+            ));
+        } else {
+            wp_send_json_error(array(
+                'message' => $result['error']
+            ));
+        }
     }
 
     /**
@@ -336,11 +528,33 @@ class HMG_AI_Admin {
             wp_die(__('Insufficient permissions', 'hmg-ai-blog-enhancer'));
         }
 
-        // Placeholder response - will be implemented with actual AI service
-        wp_send_json_success(array(
-            'content' => '<div class="hmg-ai-toc"><h3>Table of Contents</h3><ol><li><a href="#section1">Section 1</a></li><li><a href="#section2">Section 2</a></li></ol></div>',
-            'message' => __('Table of contents generated successfully!', 'hmg-ai-blog-enhancer')
-        ));
+        // Get content and post ID
+        $content = sanitize_textarea_field($_POST['content'] ?? '');
+        $post_id = (int) ($_POST['post_id'] ?? 0);
+
+        if (empty($content)) {
+            wp_send_json_error(array(
+                'message' => __('No content provided for analysis.', 'hmg-ai-blog-enhancer')
+            ));
+        }
+
+        // Generate TOC using AI service manager
+        $result = $this->ai_service_manager->generate_content('toc', $content, $post_id);
+
+        if ($result['success']) {
+            wp_send_json_success(array(
+                'content' => $result['content'],
+                'message' => $result['message'],
+                'provider_used' => $result['provider_name'] ?? 'AI Service',
+                'tokens_used' => $result['tokens_used'] ?? 0,
+                'generation_time' => $result['generation_time'] ?? 0,
+                'cached' => $result['cached'] ?? false
+            ));
+        } else {
+            wp_send_json_error(array(
+                'message' => $result['error']
+            ));
+        }
     }
 
     /**
@@ -430,5 +644,106 @@ class HMG_AI_Admin {
         $usage_stats = $this->auth_service->get_usage_stats();
         
         wp_send_json_success($usage_stats);
+    }
+
+    /**
+     * AJAX handler for testing AI providers
+     *
+     * @since    1.0.0
+     */
+    public function ajax_test_ai_providers() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
+            wp_send_json_error(array(
+                'message' => __('Security check failed', 'hmg-ai-blog-enhancer')
+            ));
+        }
+
+        // Check user capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array(
+                'message' => __('Insufficient permissions', 'hmg-ai-blog-enhancer')
+            ));
+        }
+
+        try {
+            // Test all AI providers
+            $test_results = $this->ai_service_manager->test_all_providers();
+            
+            // Log for debugging
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('HMG AI Provider Test Results: ' . print_r($test_results, true));
+            }
+            
+            wp_send_json_success(array(
+                'providers' => $test_results,
+                'message' => __('Provider tests completed.', 'hmg-ai-blog-enhancer')
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array(
+                'message' => sprintf(
+                    __('Error testing providers: %s', 'hmg-ai-blog-enhancer'),
+                    $e->getMessage()
+                )
+            ));
+        }
+    }
+
+    /**
+     * AJAX handler for saving AI content
+     *
+     * @since    1.0.0
+     */
+    public function ajax_save_ai_content() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
+            wp_die(__('Security check failed', 'hmg-ai-blog-enhancer'));
+        }
+
+        // Check user capabilities
+        if (!current_user_can('edit_posts')) {
+            wp_die(__('Insufficient permissions', 'hmg-ai-blog-enhancer'));
+        }
+
+        $post_id = (int) ($_POST['post_id'] ?? 0);
+        $content_type = sanitize_text_field($_POST['content_type'] ?? '');
+        $content = wp_kses_post($_POST['content'] ?? '');
+
+        if (!$post_id || !$content_type || !$content) {
+            wp_send_json_error(array(
+                'message' => __('Missing required parameters.', 'hmg-ai-blog-enhancer')
+            ));
+        }
+
+        // Save content based on type
+        $meta_key = '';
+        switch ($content_type) {
+            case 'takeaways':
+                $meta_key = '_hmg_ai_takeaways';
+                break;
+            case 'faq':
+                $meta_key = '_hmg_ai_faq';
+                break;
+            case 'toc':
+                $meta_key = '_hmg_ai_toc';
+                break;
+            default:
+                wp_send_json_error(array(
+                    'message' => __('Invalid content type.', 'hmg-ai-blog-enhancer')
+                ));
+        }
+
+        $result = update_post_meta($post_id, $meta_key, $content);
+
+        if ($result !== false) {
+            wp_send_json_success(array(
+                'message' => sprintf(__('%s content saved successfully!', 'hmg-ai-blog-enhancer'), ucfirst($content_type))
+            ));
+        } else {
+            wp_send_json_error(array(
+                'message' => __('Failed to save content.', 'hmg-ai-blog-enhancer')
+            ));
+        }
     }
 } 

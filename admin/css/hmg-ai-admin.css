@@ -371,4 +371,42 @@
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+/* === BLOCK EDITOR COMPATIBILITY === */
+/* Force meta box visibility in block editor */
+#hmg-ai-content-generator {
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* Ensure meta box appears in sidebar */
+.edit-post-sidebar #hmg-ai-content-generator,
+.interface-complementary-area #hmg-ai-content-generator {
+    display: block !important;
+}
+
+/* Meta box header styling for block editor */
+.block-editor-page #hmg-ai-content-generator .postbox-header {
+    background: var(--hmg-royal-blue);
+    color: white;
+}
+
+.block-editor-page #hmg-ai-content-generator .postbox-header h2 {
+    color: white;
+}
+
+/* Make sure the meta box content is visible */
+#hmg-ai-content-generator .inside {
+    display: block !important;
+    padding: 15px;
+}
+
+/* Block editor specific meta box styling */
+.wp-block-editor .hmg-ai-meta-box {
+    background: #fff;
+    border: 1px solid #e2e4e7;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
 } 

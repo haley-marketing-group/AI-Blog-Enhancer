@@ -2,8 +2,8 @@
 /**
  * Authentication Service
  *
- * Handles API key validation, user tier management, and authentication
- * with Haley Marketing servers for the HMG AI Blog Enhancer plugin.
+ * Handles API key validation, spending limit management, and cost tracking
+ * for the HMG AI Blog Enhancer plugin with user-defined budgets.
  *
  * @link       https://haleymarketing.com
  * @since      1.0.0
@@ -15,8 +15,8 @@
 /**
  * Authentication Service Class
  *
- * Manages authentication, API key validation, and user tier management.
- * Supports both standalone and base plugin authentication modes.
+ * Manages authentication, API key validation, and spending limit management.
+ * Users set their own monthly budgets and we help them track costs.
  *
  * @since      1.0.0
  * @package    HMG_AI_Blog_Enhancer
@@ -24,15 +24,6 @@
  * @author     Haley Marketing <support@haleymarketing.com>
  */
 class HMG_AI_Auth_Service {
-
-    /**
-     * API base URL for authentication
-     *
-     * @since    1.0.0
-     * @access   private
-     * @var      string    $api_base_url    The base URL for API calls.
-     */
-    private $api_base_url;
 
     /**
      * Plugin options
@@ -44,13 +35,22 @@ class HMG_AI_Auth_Service {
     private $options;
 
     /**
-     * User tier levels
+     * Default spending limits (in USD)
      *
      * @since    1.0.0
      * @access   private
-     * @var      array    $tier_levels    Available user tiers.
+     * @var      array    $default_limits    Default spending limits.
      */
-    private $tier_levels;
+    private $default_limits;
+
+    /**
+     * Provider cost rates (per 1K tokens)
+     *
+     * @since    1.0.0
+     * @access   private
+     * @var      array    $provider_costs    Cost per 1K tokens by provider.
+     */
+    private $provider_costs;
 
     /**
      * Initialize the authentication service
@@ -58,251 +58,138 @@ class HMG_AI_Auth_Service {
      * @since    1.0.0
      */
     public function __construct() {
-        $this->api_base_url = 'https://api.haleymarketing.com/ai-enhancer/v1';
         $this->options = get_option('hmg_ai_blog_enhancer_options', array());
         
-        $this->tier_levels = array(
-            'free' => array(
-                'name' => 'Free',
-                'api_calls_limit' => 50,
-                'tokens_limit' => 10000,
-                'features' => array('takeaways', 'toc'),
-                'priority' => 'standard'
+        // Default spending limit options
+        $this->default_limits = array(
+            'conservative' => array(
+                'name' => 'Conservative ($5/month)',
+                'monthly_limit' => 5.00,
+                'daily_limit' => 0.25,
+                'warning_threshold' => 0.80, // 80%
+                'description' => 'Perfect for occasional content generation'
             ),
-            'pro' => array(
-                'name' => 'Pro',
-                'api_calls_limit' => 1000,
-                'tokens_limit' => 100000,
-                'features' => array('takeaways', 'faq', 'toc', 'audio'),
-                'priority' => 'high'
+            'moderate' => array(
+                'name' => 'Moderate ($15/month)',
+                'monthly_limit' => 15.00,
+                'daily_limit' => 0.75,
+                'warning_threshold' => 0.80,
+                'description' => 'Good for regular blog posting'
             ),
-            'premium' => array(
-                'name' => 'Premium',
-                'api_calls_limit' => 5000,
-                'tokens_limit' => 500000,
-                'features' => array('takeaways', 'faq', 'toc', 'audio', 'advanced_analytics'),
-                'priority' => 'highest'
+            'active' => array(
+                'name' => 'Active ($30/month)',
+                'monthly_limit' => 30.00,
+                'daily_limit' => 1.50,
+                'warning_threshold' => 0.80,
+                'description' => 'Ideal for frequent content creation'
+            ),
+            'professional' => array(
+                'name' => 'Professional ($75/month)',
+                'monthly_limit' => 75.00,
+                'daily_limit' => 3.75,
+                'warning_threshold' => 0.80,
+                'description' => 'For high-volume content production'
+            ),
+            'custom' => array(
+                'name' => 'Custom Amount',
+                'monthly_limit' => 0.00, // User sets this
+                'daily_limit' => 0.00,   // Calculated as monthly/30
+                'warning_threshold' => 0.80,
+                'description' => 'Set your own spending limit'
             )
         );
-    }
 
-    /**
-     * Validate API key with authentication server
-     *
-     * @since    1.0.0
-     * @param    string    $api_key    The API key to validate.
-     * @return   array                 Validation result with user info.
-     */
-    public function validate_api_key($api_key) {
-        if (empty($api_key)) {
-            return array(
-                'valid' => false,
-                'error' => __('API key is required.', 'hmg-ai-blog-enhancer')
-            );
-        }
-
-        // Check if we're in development mode
-        if (defined('WP_DEBUG') && WP_DEBUG && $this->is_development_key($api_key)) {
-            return $this->get_development_validation_response($api_key);
-        }
-
-        // Check for base plugin authentication first
-        $base_plugin_auth = $this->check_base_plugin_authentication();
-        if ($base_plugin_auth['authenticated']) {
-            return $this->validate_with_base_plugin($api_key, $base_plugin_auth);
-        }
-
-        // Standalone authentication
-        return $this->validate_standalone_api_key($api_key);
-    }
-
-    /**
-     * Check if base plugin provides authentication
-     *
-     * @since    1.0.0
-     * @return   array    Base plugin authentication status.
-     */
-    private function check_base_plugin_authentication() {
-        // Check for HMG Base Plugin
-        if (function_exists('hmg_get_auth_status')) {
-            $auth_status = hmg_get_auth_status();
-            if ($auth_status && isset($auth_status['authenticated']) && $auth_status['authenticated']) {
-                return array(
-                    'authenticated' => true,
-                    'method' => 'base_plugin',
-                    'user_data' => $auth_status
-                );
-            }
-        }
-
-        // Check for other HMG plugins that might provide auth
-        $hmg_plugins = array(
-            'hmg-seo-toolkit/hmg-seo-toolkit.php',
-            'hmg-analytics-pro/hmg-analytics-pro.php',
-            'hmg-content-manager/hmg-content-manager.php'
+        // Default provider costs (will be updated based on selected models)
+        $this->provider_costs = array(
+            'gemini' => 0.00075,  // Default: Gemini 1.5 Flash
+            'openai' => 0.0015,   // Default: GPT-3.5 Turbo
+            'claude' => 0.00025   // Default: Claude 3 Haiku
         );
-
-        foreach ($hmg_plugins as $plugin) {
-            if (is_plugin_active($plugin)) {
-                $auth_function = str_replace(array('-', '/'), '_', dirname($plugin)) . '_get_auth';
-                if (function_exists($auth_function)) {
-                    $auth_data = call_user_func($auth_function);
-                    if ($auth_data && $auth_data['authenticated']) {
-                        return array(
-                            'authenticated' => true,
-                            'method' => 'hmg_plugin',
-                            'plugin' => $plugin,
-                            'user_data' => $auth_data
-                        );
-                    }
-                }
-            }
-        }
-
-        return array('authenticated' => false);
-    }
-
-    /**
-     * Validate API key using base plugin authentication
-     *
-     * @since    1.0.0
-     * @param    string    $api_key           The API key to validate.
-     * @param    array     $base_plugin_auth  Base plugin authentication data.
-     * @return   array                        Validation result.
-     */
-    private function validate_with_base_plugin($api_key, $base_plugin_auth) {
-        // Use base plugin's authentication and extend it for our service
-        $user_data = $base_plugin_auth['user_data'];
         
-        return array(
-            'valid' => true,
-            'method' => 'base_plugin',
-            'user_id' => $user_data['user_id'] ?? 'unknown',
-            'email' => $user_data['email'] ?? '',
-            'tier' => $user_data['ai_tier'] ?? 'pro', // Base plugin users get pro by default
-            'features' => $this->tier_levels[$user_data['ai_tier'] ?? 'pro']['features'],
-            'limits' => $this->tier_levels[$user_data['ai_tier'] ?? 'pro'],
-            'expires' => $user_data['expires'] ?? null,
-            'message' => __('Authenticated via HMG Base Plugin', 'hmg-ai-blog-enhancer')
-        );
+        // Update costs based on selected models
+        $this->update_provider_costs();
     }
 
     /**
-     * Validate standalone API key
+     * Update provider costs based on selected models
      *
      * @since    1.0.0
-     * @param    string    $api_key    The API key to validate.
+     */
+    private function update_provider_costs() {
+        // Model cost mappings
+        $model_costs = array(
+            // Gemini models
+            'gemini-1.5-flash' => 0.00075,
+            'gemini-1.5-pro' => 0.0035,
+            'gemini-1.0-pro' => 0.0005,
+            
+            // OpenAI models  
+            'gpt-3.5-turbo' => 0.0015,
+            'gpt-4o-mini' => 0.00015,
+            'gpt-4-turbo' => 0.01,
+            'gpt-4' => 0.03,
+            
+            // Claude models
+            'claude-3-haiku-20240307' => 0.00025,
+            'claude-3-sonnet-20240229' => 0.003,
+            'claude-3-5-sonnet-20241022' => 0.003,
+            'claude-3-opus-20240229' => 0.015
+        );
+        
+        // Update costs based on selected models
+        $selected_gemini_model = $this->options['gemini_model'] ?? 'gemini-1.5-flash';
+        $selected_openai_model = $this->options['openai_model'] ?? 'gpt-3.5-turbo';
+        $selected_claude_model = $this->options['claude_model'] ?? 'claude-3-haiku-20240307';
+        
+        $this->provider_costs['gemini'] = $model_costs[$selected_gemini_model] ?? 0.00075;
+        $this->provider_costs['openai'] = $model_costs[$selected_openai_model] ?? 0.0015;
+        $this->provider_costs['claude'] = $model_costs[$selected_claude_model] ?? 0.00025;
+    }
+
+    /**
+     * Validate API key (simplified - just check if keys exist)
+     *
+     * @since    1.0.0
+     * @param    string    $api_key    The API key to validate (legacy parameter).
      * @return   array                 Validation result.
      */
-    private function validate_standalone_api_key($api_key) {
-        $request_args = array(
-            'method' => 'POST',
-            'timeout' => 30,
-            'headers' => array(
-                'Content-Type' => 'application/json',
-                'User-Agent' => 'HMG-AI-Blog-Enhancer/' . HMG_AI_BLOG_ENHANCER_VERSION,
-                'X-Site-URL' => home_url()
-            ),
-            'body' => wp_json_encode(array(
-                'api_key' => sanitize_text_field($api_key),
-                'domain' => parse_url(home_url(), PHP_URL_HOST),
-                'plugin_version' => HMG_AI_BLOG_ENHANCER_VERSION,
-                'wp_version' => get_bloginfo('version')
-            ))
-        );
-
-        $response = wp_remote_post($this->api_base_url . '/auth/validate', $request_args);
-
-        if (is_wp_error($response)) {
+    public function validate_api_key($api_key = '') {
+        // Check for HMG AI API key first
+        $has_hmg_key = !empty($this->options['api_key']);
+        
+        // Check if any provider API keys are configured
+        $has_gemini = !empty($this->options['gemini_api_key']);
+        $has_openai = !empty($this->options['openai_api_key']);
+        $has_claude = !empty($this->options['claude_api_key']);
+        
+        if (!$has_hmg_key && !$has_gemini && !$has_openai && !$has_claude) {
             return array(
                 'valid' => false,
-                'error' => sprintf(
-                    __('Connection error: %s', 'hmg-ai-blog-enhancer'),
-                    $response->get_error_message()
-                )
+                'error' => __('Please configure either an HMG AI API key or at least one AI provider API key in the Settings page.', 'hmg-ai-blog-enhancer')
             );
         }
 
-        $response_code = wp_remote_retrieve_response_code($response);
-        $response_body = wp_remote_retrieve_body($response);
-        $data = json_decode($response_body, true);
-
-        if ($response_code !== 200) {
-            return array(
-                'valid' => false,
-                'error' => $data['message'] ?? __('API key validation failed.', 'hmg-ai-blog-enhancer')
-            );
+        $configured_providers = array();
+        $auth_method = 'provider_keys';
+        
+        if ($has_hmg_key) {
+            $auth_method = 'hmg_api_key';
+            $configured_providers[] = 'HMG AI (Unified)';
         }
-
-        if (!$data || !isset($data['valid']) || !$data['valid']) {
-            return array(
-                'valid' => false,
-                'error' => $data['message'] ?? __('Invalid API key.', 'hmg-ai-blog-enhancer')
-            );
-        }
-
-        // Cache the validation result
-        $cache_key = 'hmg_ai_auth_' . md5($api_key);
-        set_transient($cache_key, $data, HOUR_IN_SECONDS);
+        
+        if ($has_gemini) $configured_providers[] = 'Google Gemini';
+        if ($has_openai) $configured_providers[] = 'OpenAI';
+        if ($has_claude) $configured_providers[] = 'Anthropic Claude';
 
         return array(
             'valid' => true,
-            'method' => 'standalone',
-            'user_id' => $data['user_id'],
-            'email' => $data['email'],
-            'tier' => $data['tier'],
-            'features' => $this->tier_levels[$data['tier']]['features'],
-            'limits' => $this->tier_levels[$data['tier']],
-            'expires' => $data['expires'] ?? null,
-            'message' => __('API key validated successfully.', 'hmg-ai-blog-enhancer')
-        );
-    }
-
-    /**
-     * Check if API key is a development key
-     *
-     * @since    1.0.0
-     * @param    string    $api_key    The API key to check.
-     * @return   bool                  Whether it's a development key.
-     */
-    private function is_development_key($api_key) {
-        $dev_keys = array(
-            'dev_free_' . wp_hash('development'),
-            'dev_pro_' . wp_hash('development'),
-            'dev_premium_' . wp_hash('development'),
-            'hmg_dev_test_key',
-            'local_development_key'
-        );
-
-        return in_array($api_key, $dev_keys) || strpos($api_key, 'dev_') === 0;
-    }
-
-    /**
-     * Get development validation response
-     *
-     * @since    1.0.0
-     * @param    string    $api_key    The development API key.
-     * @return   array                 Development validation response.
-     */
-    private function get_development_validation_response($api_key) {
-        // Determine tier from development key
-        $tier = 'pro'; // Default
-        if (strpos($api_key, 'free') !== false) {
-            $tier = 'free';
-        } elseif (strpos($api_key, 'premium') !== false) {
-            $tier = 'premium';
-        }
-
-        return array(
-            'valid' => true,
-            'method' => 'development',
-            'user_id' => 'dev_user_' . get_current_user_id(),
-            'email' => get_option('admin_email'),
-            'tier' => $tier,
-            'features' => $this->tier_levels[$tier]['features'],
-            'limits' => $this->tier_levels[$tier],
-            'expires' => null,
-            'message' => __('Development mode - API key accepted.', 'hmg-ai-blog-enhancer')
+            'method' => $auth_method,
+            'providers' => $configured_providers,
+            'spending_limit' => $this->get_spending_limit(),
+            'message' => sprintf(
+                __('Authentication configured with: %s', 'hmg-ai-blog-enhancer'),
+                implode(', ', $configured_providers)
+            )
         );
     }
 
@@ -313,53 +200,135 @@ class HMG_AI_Auth_Service {
      * @return   array    Current authentication status.
      */
     public function get_auth_status() {
-        $api_key = $this->get_stored_api_key();
-        
-        if (empty($api_key)) {
-            return array(
-                'authenticated' => false,
-                'message' => __('No API key configured.', 'hmg-ai-blog-enhancer')
-            );
-        }
-
-        // Check cache first
-        $cache_key = 'hmg_ai_auth_status_' . md5($api_key);
-        $cached_status = get_transient($cache_key);
-        
-        if ($cached_status !== false) {
-            return $cached_status;
-        }
-
-        // Validate API key
-        $validation = $this->validate_api_key($api_key);
+        $validation = $this->validate_api_key();
         
         if (!$validation['valid']) {
-            $status = array(
+            return array(
                 'authenticated' => false,
                 'message' => $validation['error']
             );
-        } else {
-            $status = array(
-                'authenticated' => true,
-                'method' => $validation['method'],
-                'user_id' => $validation['user_id'],
-                'email' => $validation['email'],
-                'tier' => $validation['tier'],
-                'features' => $validation['features'],
-                'limits' => $validation['limits'],
-                'expires' => $validation['expires'],
-                'message' => $validation['message']
-            );
         }
 
-        // Cache the status for 15 minutes
-        set_transient($cache_key, $status, 15 * MINUTE_IN_SECONDS);
-        
-        return $status;
+        $spending_limit = $this->get_spending_limit();
+        $spending_stats = $this->get_spending_stats();
+
+        return array(
+            'authenticated' => true,
+            'method' => 'spending_limits',
+            'providers' => $validation['providers'],
+            'spending_limit' => $spending_limit,
+            'spending_stats' => $spending_stats,
+            'message' => $validation['message']
+        );
     }
 
     /**
-     * Check if user has access to a specific feature
+     * Get user's spending limit configuration
+     *
+     * @since    1.0.0
+     * @return   array    Spending limit configuration.
+     */
+    public function get_spending_limit() {
+        $limit_type = $this->options['spending_limit_type'] ?? 'moderate';
+        $custom_monthly = (float) ($this->options['custom_monthly_limit'] ?? 15.00);
+        
+        if ($limit_type === 'custom') {
+            return array(
+                'type' => 'custom',
+                'name' => 'Custom ($' . number_format($custom_monthly, 2) . '/month)',
+                'monthly_limit' => $custom_monthly,
+                'daily_limit' => round($custom_monthly / 30, 2),
+                'warning_threshold' => (float) ($this->options['warning_threshold'] ?? 0.80),
+                'description' => 'Custom spending limit'
+            );
+        }
+
+        return $this->default_limits[$limit_type] ?? $this->default_limits['moderate'];
+    }
+
+    /**
+     * Get current spending statistics
+     *
+     * @since    1.0.0
+     * @return   array    Spending statistics.
+     */
+    public function get_spending_stats() {
+        global $wpdb;
+        
+        $current_month = date('Y-m');
+        $current_date = date('Y-m-d');
+        
+        // Get usage from database
+        $usage_table = $wpdb->prefix . 'hmg_ai_usage';
+        
+        // Monthly spending
+        $monthly_query = $wpdb->prepare(
+            "SELECT 
+                SUM(estimated_cost) as total_cost,
+                COUNT(*) as total_requests,
+                SUM(tokens_used) as total_tokens
+            FROM {$usage_table} 
+            WHERE DATE_FORMAT(created_at, '%%Y-%%m') = %s",
+            $current_month
+        );
+        
+        $monthly_data = $wpdb->get_row($monthly_query, ARRAY_A);
+        
+        // Daily spending
+        $daily_query = $wpdb->prepare(
+            "SELECT 
+                SUM(estimated_cost) as total_cost,
+                COUNT(*) as total_requests
+            FROM {$usage_table} 
+            WHERE DATE(created_at) = %s",
+            $current_date
+        );
+        
+        $daily_data = $wpdb->get_row($daily_query, ARRAY_A);
+        
+        // Provider breakdown
+        $provider_query = $wpdb->prepare(
+            "SELECT 
+                provider,
+                SUM(estimated_cost) as cost,
+                COUNT(*) as requests,
+                SUM(tokens_used) as tokens
+            FROM {$usage_table} 
+            WHERE DATE_FORMAT(created_at, '%%Y-%%m') = %s
+            GROUP BY provider",
+            $current_month
+        );
+        
+        $provider_breakdown = $wpdb->get_results($provider_query, ARRAY_A);
+        
+        $spending_limit = $this->get_spending_limit();
+        
+        return array(
+            'monthly' => array(
+                'spent' => (float) ($monthly_data['total_cost'] ?? 0),
+                'limit' => $spending_limit['monthly_limit'],
+                'percentage' => $spending_limit['monthly_limit'] > 0 
+                    ? min(100, (($monthly_data['total_cost'] ?? 0) / $spending_limit['monthly_limit']) * 100)
+                    : 0,
+                'requests' => (int) ($monthly_data['total_requests'] ?? 0),
+                'tokens' => (int) ($monthly_data['total_tokens'] ?? 0)
+            ),
+            'daily' => array(
+                'spent' => (float) ($daily_data['total_cost'] ?? 0),
+                'limit' => $spending_limit['daily_limit'],
+                'percentage' => $spending_limit['daily_limit'] > 0 
+                    ? min(100, (($daily_data['total_cost'] ?? 0) / $spending_limit['daily_limit']) * 100)
+                    : 0,
+                'requests' => (int) ($daily_data['total_requests'] ?? 0)
+            ),
+            'providers' => $provider_breakdown ?: array(),
+            'reset_date' => date('Y-m-d', strtotime('first day of next month')),
+            'warning_threshold' => $spending_limit['warning_threshold'] * 100
+        );
+    }
+
+    /**
+     * Check if user has access to a specific feature (always true now)
      *
      * @since    1.0.0
      * @param    string    $feature    The feature to check.
@@ -367,49 +336,151 @@ class HMG_AI_Auth_Service {
      */
     public function has_feature_access($feature) {
         $auth_status = $this->get_auth_status();
-        
-        if (!$auth_status['authenticated']) {
-            return false;
-        }
-
-        return in_array($feature, $auth_status['features']);
+        return $auth_status['authenticated'];
     }
 
     /**
-     * Get user tier information
+     * Check spending limits before API call
      *
      * @since    1.0.0
-     * @return   array    User tier information.
+     * @return   array    Usage limit check result.
      */
-    public function get_user_tier() {
-        $auth_status = $this->get_auth_status();
+    public function check_usage_limits() {
+        $spending_stats = $this->get_spending_stats();
+        $spending_limit = $this->get_spending_limit();
         
-        if (!$auth_status['authenticated']) {
-            return $this->tier_levels['free'];
+        // Check if monthly limit exceeded
+        if ($spending_stats['monthly']['spent'] >= $spending_limit['monthly_limit']) {
+            return array(
+                'exceeded' => true,
+                'type' => 'monthly',
+                'message' => sprintf(
+                    __('Monthly spending limit of $%.2f has been reached. Limit resets on %s.', 'hmg-ai-blog-enhancer'),
+                    $spending_limit['monthly_limit'],
+                    $spending_stats['reset_date']
+                )
+            );
         }
-
-        return $this->tier_levels[$auth_status['tier']];
+        
+        // Check if daily limit exceeded
+        if ($spending_stats['daily']['spent'] >= $spending_limit['daily_limit']) {
+            return array(
+                'exceeded' => true,
+                'type' => 'daily',
+                'message' => sprintf(
+                    __('Daily spending limit of $%.2f has been reached. Try again tomorrow.', 'hmg-ai-blog-enhancer'),
+                    $spending_limit['daily_limit']
+                )
+            );
+        }
+        
+        // Check if approaching warning threshold
+        $monthly_percentage = $spending_stats['monthly']['percentage'] / 100;
+        if ($monthly_percentage >= $spending_limit['warning_threshold']) {
+            return array(
+                'exceeded' => false,
+                'warning' => true,
+                'message' => sprintf(
+                    __('You have used %.1f%% of your monthly spending limit ($%.2f of $%.2f).', 'hmg-ai-blog-enhancer'),
+                    $spending_stats['monthly']['percentage'],
+                    $spending_stats['monthly']['spent'],
+                    $spending_limit['monthly_limit']
+                )
+            );
+        }
+        
+        return array(
+            'exceeded' => false,
+            'warning' => false,
+            'remaining_monthly' => $spending_limit['monthly_limit'] - $spending_stats['monthly']['spent'],
+            'remaining_daily' => $spending_limit['daily_limit'] - $spending_stats['daily']['spent']
+        );
     }
 
     /**
-     * Get stored API key
+     * Record API usage with cost estimation
+     *
+     * @since    1.0.0
+     * @param    int       $post_id        The post ID.
+     * @param    string    $feature_type   The feature used.
+     * @param    int       $api_calls      Number of API calls used.
+     * @param    int       $tokens         Number of tokens used.
+     * @param    string    $provider       AI provider used.
+     * @return   bool                      Whether usage was recorded.
+     */
+    public function record_usage($post_id, $feature_type, $api_calls = 1, $tokens = 0, $provider = 'unknown') {
+        global $wpdb;
+        
+        // Calculate estimated cost
+        $cost_per_1k_tokens = $this->provider_costs[$provider] ?? 0.001; // Default fallback
+        $estimated_cost = ($tokens / 1000) * $cost_per_1k_tokens;
+        
+        $usage_table = $wpdb->prefix . 'hmg_ai_usage';
+        
+        $result = $wpdb->insert(
+            $usage_table,
+            array(
+                'post_id' => $post_id,
+                'feature_type' => $feature_type,
+                'provider' => $provider,
+                'api_calls_used' => $api_calls,
+                'tokens_used' => $tokens,
+                'estimated_cost' => $estimated_cost,
+                'created_at' => current_time('mysql')
+            ),
+            array('%d', '%s', '%s', '%d', '%d', '%f', '%s')
+        );
+        
+        return $result !== false;
+    }
+
+    /**
+     * Get usage statistics (legacy method for compatibility)
+     *
+     * @since    1.0.0
+     * @return   array    Usage statistics.
+     */
+    public function get_usage_stats() {
+        $spending_stats = $this->get_spending_stats();
+        $spending_limit = $this->get_spending_limit();
+        
+        // Convert to legacy format for compatibility
+        return array(
+            'api_calls_used' => $spending_stats['monthly']['requests'],
+            'api_calls_limit' => 999999, // Unlimited calls, limited by spending
+            'tokens_used' => $spending_stats['monthly']['tokens'],
+            'tokens_limit' => 999999, // Unlimited tokens, limited by spending
+            'spending_used' => $spending_stats['monthly']['spent'],
+            'spending_limit' => $spending_limit['monthly_limit'],
+            'reset_date' => $spending_stats['reset_date'],
+            'limit_type' => $spending_limit['name']
+        );
+    }
+
+    /**
+     * Get stored API key (legacy method)
      *
      * @since    1.0.0
      * @return   string    The stored API key.
      */
     public function get_stored_api_key() {
-        return $this->options['api_key'] ?? '';
+        // Return any available API key for legacy compatibility
+        return $this->options['gemini_api_key'] ?? 
+               $this->options['openai_api_key'] ?? 
+               $this->options['claude_api_key'] ?? 
+               '';
     }
 
     /**
-     * Store API key
+     * Store API key (legacy method)
      *
      * @since    1.0.0
      * @param    string    $api_key    The API key to store.
      * @return   bool                  Whether the key was stored successfully.
      */
     public function store_api_key($api_key) {
-        $this->options['api_key'] = sanitize_text_field($api_key);
+        // For legacy compatibility, store as gemini key
+        $this->options['gemini_api_key'] = sanitize_text_field($api_key);
         $result = update_option('hmg_ai_blog_enhancer_options', $this->options);
         
         // Clear auth cache when API key changes
@@ -424,121 +495,112 @@ class HMG_AI_Auth_Service {
      * @since    1.0.0
      */
     public function clear_auth_cache() {
-        $api_key = $this->get_stored_api_key();
-        
-        if (!empty($api_key)) {
-            delete_transient('hmg_ai_auth_' . md5($api_key));
-            delete_transient('hmg_ai_auth_status_' . md5($api_key));
-        }
-        
-        delete_transient('hmg_ai_api_status');
+        // Clear any cached authentication data
+        delete_transient('hmg_ai_auth_status');
+        delete_transient('hmg_ai_spending_stats');
     }
 
     /**
-     * Get usage statistics for current user
+     * Get available spending limit presets
      *
      * @since    1.0.0
-     * @return   array    Usage statistics.
+     * @return   array    Available spending limit options.
      */
-    public function get_usage_stats() {
-        global $wpdb;
+    public function get_spending_limit_options() {
+        return $this->default_limits;
+    }
+
+    /**
+     * Update spending limit configuration
+     *
+     * @since    1.0.0
+     * @param    string    $limit_type      The limit type (conservative, moderate, etc.).
+     * @param    float     $custom_amount   Custom monthly amount (if limit_type is 'custom').
+     * @param    float     $warning_threshold Warning threshold (0.0-1.0).
+     * @return   bool                       Whether the update was successful.
+     */
+    public function update_spending_limit($limit_type, $custom_amount = 0.00, $warning_threshold = 0.80) {
+        $this->options['spending_limit_type'] = $limit_type;
+        $this->options['custom_monthly_limit'] = (float) $custom_amount;
+        $this->options['warning_threshold'] = (float) $warning_threshold;
         
-        $auth_status = $this->get_auth_status();
-        if (!$auth_status['authenticated']) {
-            return array(
-                'api_calls_used' => 0,
-                'tokens_used' => 0,
-                'reset_date' => date('Y-m-d', strtotime('first day of next month'))
+        return update_option('hmg_ai_blog_enhancer_options', $this->options);
+    }
+
+    /**
+     * Get cost estimate for content generation
+     *
+     * @since    1.0.0
+     * @param    string    $content       Content to analyze.
+     * @param    string    $provider      AI provider.
+     * @return   array                    Cost estimate.
+     */
+    public function estimate_cost($content, $provider = 'gemini') {
+        // Rough token estimation (1 token ≈ 4 characters for English)
+        $estimated_input_tokens = strlen($content) / 4;
+        $estimated_output_tokens = 500; // Average output size
+        $total_tokens = $estimated_input_tokens + $estimated_output_tokens;
+        
+        $cost_per_1k_tokens = $this->provider_costs[$provider] ?? 0.001;
+        $estimated_cost = ($total_tokens / 1000) * $cost_per_1k_tokens;
+        
+        return array(
+            'estimated_tokens' => (int) $total_tokens,
+            'estimated_cost' => round($estimated_cost, 4),
+            'provider' => $provider,
+            'cost_per_1k_tokens' => $cost_per_1k_tokens
+        );
+    }
+
+    /**
+     * Get spending insights and recommendations
+     *
+     * @since    1.0.0
+     * @return   array    Spending insights.
+     */
+    public function get_spending_insights() {
+        $spending_stats = $this->get_spending_stats();
+        $insights = array();
+        
+        // Cost efficiency analysis
+        if (!empty($spending_stats['providers'])) {
+            $cheapest_provider = null;
+            $lowest_cost_per_request = PHP_FLOAT_MAX;
+            
+            foreach ($spending_stats['providers'] as $provider_data) {
+                if ($provider_data['requests'] > 0) {
+                    $cost_per_request = $provider_data['cost'] / $provider_data['requests'];
+                    if ($cost_per_request < $lowest_cost_per_request) {
+                        $lowest_cost_per_request = $cost_per_request;
+                        $cheapest_provider = $provider_data['provider'];
+                    }
+                }
+            }
+            
+            if ($cheapest_provider) {
+                $insights[] = array(
+                    'type' => 'cost_efficiency',
+                    'message' => sprintf(
+                        __('%s is your most cost-effective provider at $%.4f per request.', 'hmg-ai-blog-enhancer'),
+                        ucfirst($cheapest_provider),
+                        $lowest_cost_per_request
+                    )
+                );
+            }
+        }
+        
+        // Spending trend
+        $monthly_percentage = $spending_stats['monthly']['percentage'];
+        if ($monthly_percentage > 50) {
+            $insights[] = array(
+                'type' => 'spending_trend',
+                'message' => sprintf(
+                    __('You\'ve used %.1f%% of your monthly budget. Consider monitoring usage closely.', 'hmg-ai-blog-enhancer'),
+                    $monthly_percentage
+                )
             );
         }
-
-        $user_limits = $auth_status['limits'];
-        $current_month = date('Y-m');
         
-        // Get usage from database
-        $usage_table = $wpdb->prefix . 'hmg_ai_usage';
-        
-        $usage_query = $wpdb->prepare(
-            "SELECT 
-                SUM(api_calls_used) as api_calls_used,
-                SUM(tokens_used) as tokens_used
-            FROM {$usage_table} 
-            WHERE user_id = %s 
-            AND DATE_FORMAT(created_at, '%%Y-%%m') = %s",
-            $auth_status['user_id'],
-            $current_month
-        );
-        
-        $usage_data = $wpdb->get_row($usage_query, ARRAY_A);
-        
-        return array(
-            'api_calls_used' => (int) ($usage_data['api_calls_used'] ?? 0),
-            'api_calls_limit' => $user_limits['api_calls_limit'],
-            'tokens_used' => (int) ($usage_data['tokens_used'] ?? 0),
-            'tokens_limit' => $user_limits['tokens_limit'],
-            'reset_date' => date('Y-m-d', strtotime('first day of next month')),
-            'tier' => $auth_status['tier'],
-            'tier_name' => $user_limits['name']
-        );
-    }
-
-    /**
-     * Record API usage
-     *
-     * @since    1.0.0
-     * @param    int       $post_id        The post ID.
-     * @param    string    $feature_type   The feature used.
-     * @param    int       $api_calls      Number of API calls used.
-     * @param    int       $tokens         Number of tokens used.
-     * @return   bool                      Whether usage was recorded.
-     */
-    public function record_usage($post_id, $feature_type, $api_calls = 1, $tokens = 0) {
-        global $wpdb;
-        
-        $auth_status = $this->get_auth_status();
-        if (!$auth_status['authenticated']) {
-            return false;
-        }
-
-        $usage_table = $wpdb->prefix . 'hmg_ai_usage';
-        
-        return $wpdb->insert(
-            $usage_table,
-            array(
-                'user_id' => $auth_status['user_id'],
-                'post_id' => (int) $post_id,
-                'feature_type' => sanitize_text_field($feature_type),
-                'api_calls_used' => (int) $api_calls,
-                'tokens_used' => (int) $tokens,
-                'created_at' => current_time('mysql')
-            ),
-            array('%s', '%d', '%s', '%d', '%d', '%s')
-        );
-    }
-
-    /**
-     * Check if user has exceeded usage limits
-     *
-     * @since    1.0.0
-     * @return   array    Usage limit status.
-     */
-    public function check_usage_limits() {
-        $usage_stats = $this->get_usage_stats();
-        
-        $limits_exceeded = array();
-        
-        if ($usage_stats['api_calls_used'] >= $usage_stats['api_calls_limit']) {
-            $limits_exceeded[] = 'api_calls';
-        }
-        
-        if ($usage_stats['tokens_used'] >= $usage_stats['tokens_limit']) {
-            $limits_exceeded[] = 'tokens';
-        }
-        
-        return array(
-            'exceeded' => !empty($limits_exceeded),
-            'limits_exceeded' => $limits_exceeded,
-            'usage_stats' => $usage_stats
-        );
+        return $insights;
     }
 } 

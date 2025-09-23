@@ -1,0 +1,23 @@
+<h1>HMG AI Content Generators - Test Results</h1>
+<p><strong>Testing content generation classes with sample data</strong></p>
+<h2>1. Testing Takeaways Generator</h2>
+<h3>Sample Content Generation</h3>
+<p><strong>✅ Sample content generated:</strong> 5 takeaways</p>
+<h4>Generated Takeaways:</h4>
+<ul>
+<li><strong>1.</strong> AI-powered content marketing increases engagement by up to 73% compared to traditional methods.</li>
+<li><strong>2.</strong> Personalized content recommendations can boost conversion rates by 19% on average.</li>
+<li><strong>3.</strong> Automated content optimization saves content creators 15-20 hours per week.</li>
+<li><strong>4.</strong> Machine learning algorithms can predict trending topics 48 hours before they peak.</li>
+<li><strong>5.</strong> AI-driven content distribution increases reach by 45% across social media platforms.</li>
+</ul>
+<h3>AI Content Processing Test</h3>
+
+Fatal error: Uncaught Error: Call to undefined function strip_shortcodes() in /Users/jeffgipson/HMG-AI-Blog-Enhancer/includes/generators/class-hmg-ai-content-generator.php:193
+Stack trace:
+#0 /Users/jeffgipson/HMG-AI-Blog-Enhancer/includes/generators/class-hmg-ai-content-generator.php(103): HMG_AI_Content_Generator->prepare_source_content(Object(stdClass))
+#1 /Users/jeffgipson/HMG-AI-Blog-Enhancer/test-content-generators.php(174): HMG_AI_Content_Generator->generate_for_post(1, Array)
+#2 /Users/jeffgipson/HMG-AI-Blog-Enhancer/test-content-generators.php(140): test_takeaways_generator(1, Array)
+#3 /Users/jeffgipson/HMG-AI-Blog-Enhancer/test-content-generators.php(260): test_content_generators()
+#4 {main}
+  thrown in /Users/jeffgipson/HMG-AI-Blog-Enhancer/includes/generators/class-hmg-ai-content-generator.php on line 193

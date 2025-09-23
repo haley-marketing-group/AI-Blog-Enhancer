@@ -70,6 +70,9 @@ services:
     environment:
       HUB_HOST: selenium-hub
       HUB_PORT: 4444
+      SE_EVENT_BUS_HOST: selenium-hub
+      SE_EVENT_BUS_PUBLISH_PORT: 4442
+      SE_EVENT_BUS_SUBSCRIBE_PORT: 4443
       NODE_MAX_INSTANCES: 2
       NODE_MAX_SESSION: 2
     volumes:
@@ -85,6 +88,9 @@ services:
     environment:
       HUB_HOST: selenium-hub
       HUB_PORT: 4444
+      SE_EVENT_BUS_HOST: selenium-hub
+      SE_EVENT_BUS_PUBLISH_PORT: 4442
+      SE_EVENT_BUS_SUBSCRIBE_PORT: 4443
       NODE_MAX_INSTANCES: 2
       NODE_MAX_SESSION: 2
     volumes:

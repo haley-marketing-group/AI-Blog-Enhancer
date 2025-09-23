@@ -22,49 +22,90 @@ wp_nonce_field('hmg_ai_meta_box', 'hmg_ai_meta_nonce');
 // Get current post ID
 $post_id = $post->ID ?? 0;
 $options = get_option('hmg_ai_blog_enhancer_options', array());
+
+// Get authentication status
+$auth_service = new HMG_AI_Auth_Service();
+$auth_status = $auth_service->get_auth_status();
 ?>
 
 <div class="hmg-ai-meta-box">
     <div class="hmg-ai-notices"></div>
     
-    <?php if (empty($options['api_key'])): ?>
+    <?php if (!$auth_status['authenticated']): ?>
         <div class="hmg-ai-notice warning">
             <p>
-                <?php _e('API key not configured.', 'hmg-ai-blog-enhancer'); ?>
-                <a href="<?php echo admin_url('admin.php?page=hmg-ai-settings'); ?>">
-                    <?php _e('Configure now', 'hmg-ai-blog-enhancer'); ?>
+                <strong><?php _e('API Configuration Required', 'hmg-ai-blog-enhancer'); ?></strong><br>
+                <?php echo esc_html($auth_status['message']); ?>
+            </p>
+            <p>
+                <a href="<?php echo admin_url('admin.php?page=hmg-ai-settings'); ?>" class="button button-primary">
+                    <?php _e('Configure API Keys', 'hmg-ai-blog-enhancer'); ?>
                 </a>
             </p>
         </div>
     <?php else: ?>
         
+        <!-- Authentication Status -->
+        <div class="hmg-ai-auth-status">
+            <div class="hmg-ai-auth-indicator">
+                <span class="dashicons dashicons-yes-alt" style="color: var(--hmg-lime-green, #5E9732);"></span>
+                <strong><?php _e('Connected', 'hmg-ai-blog-enhancer'); ?></strong>
+            </div>
+            <div class="hmg-ai-auth-providers">
+                <?php if (!empty($auth_status['providers'])): ?>
+                    <small><?php echo esc_html(implode(', ', $auth_status['providers'])); ?></small>
+                <?php endif; ?>
+            </div>
+        </div>
+        
         <!-- Usage Meter -->
+        <?php $spending_stats = $auth_status['spending_stats'] ?? array(); ?>
         <div class="hmg-ai-usage-meter">
             <h4><?php _e('Usage This Month', 'hmg-ai-blog-enhancer'); ?></h4>
             
-            <div class="hmg-ai-usage-section">
-                <label><?php _e('API Calls', 'hmg-ai-blog-enhancer'); ?></label>
-                <div class="hmg-ai-usage-bar">
-                    <div class="hmg-ai-usage-fill api-calls" data-width="15"></div>
+            <?php if (!empty($spending_stats['monthly'])): ?>
+                <div class="hmg-ai-usage-section">
+                    <label><?php _e('Spending', 'hmg-ai-blog-enhancer'); ?></label>
+                    <div class="hmg-ai-usage-bar">
+                        <div class="hmg-ai-usage-fill spending" data-width="<?php echo min(100, $spending_stats['monthly']['percentage']); ?>"></div>
+                    </div>
+                    <div class="hmg-ai-usage-stats">
+                        <span class="spending-used">$<?php echo number_format($spending_stats['monthly']['spent'], 2); ?></span> / 
+                        <span class="spending-limit">$<?php echo number_format($spending_stats['monthly']['limit'], 2); ?></span>
+                        <span class="spending-percentage">(<?php echo number_format($spending_stats['monthly']['percentage'], 1); ?>%)</span>
+                    </div>
                 </div>
-                <div class="hmg-ai-usage-stats">
-                    <span class="api-calls-used">150</span> / <span class="api-calls-limit">1000</span>
+                
+                <div class="hmg-ai-usage-section">
+                    <label><?php _e('API Calls', 'hmg-ai-blog-enhancer'); ?></label>
+                    <div class="hmg-ai-usage-bar">
+                        <div class="hmg-ai-usage-fill api-calls" data-width="<?php echo min(100, ($spending_stats['monthly']['requests'] / max(1, $spending_stats['monthly']['requests'] + 100)) * 100); ?>"></div>
+                    </div>
+                    <div class="hmg-ai-usage-stats">
+                        <span class="api-calls-used"><?php echo number_format($spending_stats['monthly']['requests']); ?></span> calls
+                    </div>
                 </div>
-            </div>
-            
-            <div class="hmg-ai-usage-section">
-                <label><?php _e('Tokens', 'hmg-ai-blog-enhancer'); ?></label>
-                <div class="hmg-ai-usage-bar">
-                    <div class="hmg-ai-usage-fill tokens" data-width="25"></div>
+                
+                <?php if (!empty($spending_stats['monthly']['tokens'])): ?>
+                    <div class="hmg-ai-usage-section">
+                        <label><?php _e('Tokens Used', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="hmg-ai-usage-bar">
+                            <div class="hmg-ai-usage-fill tokens" data-width="<?php echo min(100, ($spending_stats['monthly']['tokens'] / max(1000000, $spending_stats['monthly']['tokens'])) * 100); ?>"></div>
+                        </div>
+                        <div class="hmg-ai-usage-stats">
+                            <span class="tokens-used"><?php echo number_format($spending_stats['monthly']['tokens']); ?></span> tokens
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <p class="hmg-ai-reset-info">
+                    <small><?php _e('Resets on:', 'hmg-ai-blog-enhancer'); ?> <span class="hmg-ai-reset-date"><?php echo esc_html($spending_stats['reset_date'] ?? 'Unknown'); ?></span></small>
+                </p>
+            <?php else: ?>
+                <div class="hmg-ai-usage-section">
+                    <p class="hmg-ai-no-usage"><?php _e('No usage data available yet. Generate some content to see statistics!', 'hmg-ai-blog-enhancer'); ?></p>
                 </div>
-                <div class="hmg-ai-usage-stats">
-                    <span class="tokens-used">25,000</span> / <span class="tokens-limit">100,000</span>
-                </div>
-            </div>
-            
-            <p class="hmg-ai-reset-info">
-                <small><?php _e('Resets on:', 'hmg-ai-blog-enhancer'); ?> <span class="hmg-ai-reset-date"><?php echo date('M j, Y', strtotime('+1 month')); ?></span></small>
-            </p>
+            <?php endif; ?>
         </div>
 
         <!-- Content Generation Controls -->
@@ -125,31 +166,103 @@ $options = get_option('hmg_ai_blog_enhancer_options', array());
                 
                 <?php if ($generated_takeaways): ?>
                     <div class="hmg-ai-content-item">
-                        <strong><?php _e('Key Takeaways:', 'hmg-ai-blog-enhancer'); ?></strong>
-                        <span class="dashicons dashicons-yes-alt" style="color: var(--hmg-lime-green);"></span>
-                        <button type="button" class="button-link hmg-ai-regenerate" data-type="takeaways" data-post-id="<?php echo $post_id; ?>">
-                            <?php _e('Regenerate', 'hmg-ai-blog-enhancer'); ?>
-                        </button>
+                        <div class="hmg-ai-content-header">
+                            <strong><?php _e('Key Takeaways:', 'hmg-ai-blog-enhancer'); ?></strong>
+                            <span class="dashicons dashicons-yes-alt" style="color: var(--hmg-lime-green);"></span>
+                            <div class="hmg-ai-content-actions">
+                                <button type="button" class="button-link hmg-ai-edit-content" data-type="takeaways" data-post-id="<?php echo $post_id; ?>">
+                                    <?php _e('Edit', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                                <button type="button" class="button-link hmg-ai-regenerate" data-type="takeaways" data-post-id="<?php echo $post_id; ?>">
+                                    <?php _e('Regenerate', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                                <button type="button" class="button-link hmg-ai-insert-shortcode" data-type="takeaways">
+                                    <?php _e('Insert Shortcode', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="hmg-ai-content-preview" id="takeaways-preview">
+                            <?php echo wp_kses_post(substr(strip_tags($generated_takeaways), 0, 150) . '...'); ?>
+                        </div>
+                        <div class="hmg-ai-content-editor" id="takeaways-editor" style="display: none;">
+                            <textarea rows="6" style="width: 100%;" id="takeaways-content"><?php echo esc_textarea(strip_tags($generated_takeaways)); ?></textarea>
+                            <div class="hmg-ai-editor-actions">
+                                <button type="button" class="button button-primary hmg-ai-save-content" data-type="takeaways" data-post-id="<?php echo $post_id; ?>">
+                                    <?php _e('Save', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                                <button type="button" class="button hmg-ai-cancel-edit" data-type="takeaways">
+                                    <?php _e('Cancel', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 <?php endif; ?>
                 
                 <?php if ($generated_faq): ?>
                     <div class="hmg-ai-content-item">
-                        <strong><?php _e('FAQ:', 'hmg-ai-blog-enhancer'); ?></strong>
-                        <span class="dashicons dashicons-yes-alt" style="color: var(--hmg-lime-green);"></span>
-                        <button type="button" class="button-link hmg-ai-regenerate" data-type="faq" data-post-id="<?php echo $post_id; ?>">
-                            <?php _e('Regenerate', 'hmg-ai-blog-enhancer'); ?>
-                        </button>
+                        <div class="hmg-ai-content-header">
+                            <strong><?php _e('FAQ:', 'hmg-ai-blog-enhancer'); ?></strong>
+                            <span class="dashicons dashicons-yes-alt" style="color: var(--hmg-lime-green);"></span>
+                            <div class="hmg-ai-content-actions">
+                                <button type="button" class="button-link hmg-ai-edit-content" data-type="faq" data-post-id="<?php echo $post_id; ?>">
+                                    <?php _e('Edit', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                                <button type="button" class="button-link hmg-ai-regenerate" data-type="faq" data-post-id="<?php echo $post_id; ?>">
+                                    <?php _e('Regenerate', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                                <button type="button" class="button-link hmg-ai-insert-shortcode" data-type="faq">
+                                    <?php _e('Insert Shortcode', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="hmg-ai-content-preview" id="faq-preview">
+                            <?php echo wp_kses_post(substr(strip_tags($generated_faq), 0, 150) . '...'); ?>
+                        </div>
+                        <div class="hmg-ai-content-editor" id="faq-editor" style="display: none;">
+                            <textarea rows="8" style="width: 100%;" id="faq-content"><?php echo esc_textarea(strip_tags($generated_faq)); ?></textarea>
+                            <div class="hmg-ai-editor-actions">
+                                <button type="button" class="button button-primary hmg-ai-save-content" data-type="faq" data-post-id="<?php echo $post_id; ?>">
+                                    <?php _e('Save', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                                <button type="button" class="button hmg-ai-cancel-edit" data-type="faq">
+                                    <?php _e('Cancel', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 <?php endif; ?>
                 
                 <?php if ($generated_toc): ?>
                     <div class="hmg-ai-content-item">
-                        <strong><?php _e('Table of Contents:', 'hmg-ai-blog-enhancer'); ?></strong>
-                        <span class="dashicons dashicons-yes-alt" style="color: var(--hmg-lime-green);"></span>
-                        <button type="button" class="button-link hmg-ai-regenerate" data-type="toc" data-post-id="<?php echo $post_id; ?>">
-                            <?php _e('Regenerate', 'hmg-ai-blog-enhancer'); ?>
-                        </button>
+                        <div class="hmg-ai-content-header">
+                            <strong><?php _e('Table of Contents:', 'hmg-ai-blog-enhancer'); ?></strong>
+                            <span class="dashicons dashicons-yes-alt" style="color: var(--hmg-lime-green);"></span>
+                            <div class="hmg-ai-content-actions">
+                                <button type="button" class="button-link hmg-ai-edit-content" data-type="toc" data-post-id="<?php echo $post_id; ?>">
+                                    <?php _e('Edit', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                                <button type="button" class="button-link hmg-ai-regenerate" data-type="toc" data-post-id="<?php echo $post_id; ?>">
+                                    <?php _e('Regenerate', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                                <button type="button" class="button-link hmg-ai-insert-shortcode" data-type="toc">
+                                    <?php _e('Insert Shortcode', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="hmg-ai-content-preview" id="toc-preview">
+                            <?php echo wp_kses_post(substr(strip_tags($generated_toc), 0, 150) . '...'); ?>
+                        </div>
+                        <div class="hmg-ai-content-editor" id="toc-editor" style="display: none;">
+                            <textarea rows="6" style="width: 100%;" id="toc-content"><?php echo esc_textarea(strip_tags($generated_toc)); ?></textarea>
+                            <div class="hmg-ai-editor-actions">
+                                <button type="button" class="button button-primary hmg-ai-save-content" data-type="toc" data-post-id="<?php echo $post_id; ?>">
+                                    <?php _e('Save', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                                <button type="button" class="button hmg-ai-cancel-edit" data-type="toc">
+                                    <?php _e('Cancel', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 <?php endif; ?>
                 
@@ -189,6 +302,33 @@ $options = get_option('hmg_ai_blog_enhancer_options', array());
     font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+.hmg-ai-auth-status {
+    background: #E8F5E8;
+    border-left: 4px solid var(--hmg-lime-green, #5E9732);
+    padding: 12px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.hmg-ai-auth-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.hmg-ai-auth-providers {
+    color: var(--hmg-medium-gray, #6C757D);
+    font-size: 12px;
+}
+
+.hmg-ai-no-usage {
+    color: var(--hmg-medium-gray, #6C757D);
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
+
 .hmg-ai-usage-section {
     margin-bottom: 15px;
 }
@@ -212,15 +352,43 @@ $options = get_option('hmg_ai_blog_enhancer_options', array());
 }
 
 .hmg-ai-content-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 0;
+    padding: 12px 0;
     border-bottom: 1px solid #E1E5E9;
 }
 
 .hmg-ai-content-item:last-child {
     border-bottom: none;
+}
+
+.hmg-ai-content-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.hmg-ai-content-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.hmg-ai-content-preview {
+    background: #f9f9f9;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.hmg-ai-content-editor {
+    margin-top: 8px;
+}
+
+.hmg-ai-editor-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
 }
 
 .hmg-ai-help-section ul {
