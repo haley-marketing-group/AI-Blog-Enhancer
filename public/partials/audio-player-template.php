@@ -2,11 +2,13 @@
 /**
  * Template for displaying AI-generated audio player
  *
- * @link       https://haleymarketing.com
- * @since      1.0.0
+ * Available variables:
+ * - $audio_data: Array with 'url', 'title', 'duration', 'size'
+ * - $style: Display style (player, compact, minimal, card)
+ * - $post_id: The post ID
  *
- * @package    HMG_AI_Blog_Enhancer
- * @subpackage HMG_AI_Blog_Enhancer/public/partials
+ * @package HMG_AI_Blog_Enhancer
+ * @since 1.0.0
  */
 
 // Prevent direct access
@@ -14,177 +16,151 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Validate audio URL
-if (empty($audio_url) || !filter_var($audio_url, FILTER_VALIDATE_URL)) {
+if (empty($audio_data['url'])) {
     return;
 }
-
-// Get style class
-$style_class = 'hmg-ai-audio-' . sanitize_html_class($atts['style']);
-$unique_id = 'hmg-ai-audio-' . uniqid();
-
-// Get audio metadata if available
-$audio_title = get_post_meta($atts['post_id'], '_hmg_ai_audio_title', true) ?: get_the_title($atts['post_id']);
-$audio_duration = get_post_meta($atts['post_id'], '_hmg_ai_audio_duration', true);
-$audio_size = get_post_meta($atts['post_id'], '_hmg_ai_audio_size', true);
 ?>
 
-<div class="hmg-ai-audio <?php echo esc_attr($style_class); ?>" data-hmg-component="audio" id="<?php echo esc_attr($unique_id); ?>">
-    <div class="hmg-ai-audio-header">
-        <h3 class="hmg-ai-audio-title">
-            <span class="hmg-ai-icon">🎧</span>
-            Listen to This Article
-        </h3>
-        <div class="hmg-ai-branding">
-            <span class="hmg-ai-powered-by">Powered by</span>
-            <span class="hmg-ai-brand">Haley Marketing AI</span>
+<div class="hmg-ai-audio hmg-ai-audio-<?php echo esc_attr($style); ?>" data-post-id="<?php echo esc_attr($post_id); ?>">
+    <?php if ($style === 'card'): ?>
+        <div class="hmg-ai-audio-card">
+            <div class="hmg-ai-audio-card-header">
+                <span class="hmg-ai-audio-icon">🎧</span>
+                <h4 class="hmg-ai-audio-title"><?php _e('Listen to This Article', 'hmg-ai-blog-enhancer'); ?></h4>
+            </div>
+            <div class="hmg-ai-audio-card-body">
+                <audio controls class="hmg-ai-audio-element">
+                    <source src="<?php echo esc_url($audio_data['url']); ?>" type="audio/mpeg">
+                    <?php _e('Your browser does not support the audio element.', 'hmg-ai-blog-enhancer'); ?>
+                </audio>
+                <?php if (!empty($audio_data['duration'])): ?>
+                    <div class="hmg-ai-audio-meta">
+                        <span class="hmg-ai-audio-duration">
+                            <?php echo esc_html($audio_data['duration']); ?>
+                        </span>
+                        <?php if (!empty($audio_data['size'])): ?>
+                            <span class="hmg-ai-audio-size">
+                                <?php echo esc_html(size_format($audio_data['size'])); ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <div class="hmg-ai-audio-card-footer">
+                <a href="<?php echo esc_url($audio_data['url']); ?>" 
+                   download="<?php echo esc_attr(sanitize_file_name($audio_data['title']) . '.mp3'); ?>"
+                   class="hmg-ai-audio-download">
+                    <?php _e('Download Audio', 'hmg-ai-blog-enhancer'); ?>
+                </a>
+            </div>
         </div>
-    </div>
     
-    <div class="hmg-ai-audio-content">
-        <?php if ($atts['style'] === 'compact'): ?>
-            <div class="hmg-ai-audio-compact">
-                <audio 
-                    class="hmg-ai-audio-element" 
-                    controls 
-                    preload="metadata"
-                    aria-label="Audio version of <?php echo esc_attr($audio_title); ?>"
-                >
-                    <source src="<?php echo esc_url($audio_url); ?>" type="audio/mpeg">
-                    <p>Your browser doesn't support HTML5 audio. <a href="<?php echo esc_url($audio_url); ?>">Download the audio file</a>.</p>
-                </audio>
-                <div class="hmg-ai-audio-info">
-                    <div class="hmg-ai-audio-track-title"><?php echo esc_html($audio_title); ?></div>
-                    <?php if ($audio_duration): ?>
-                        <div class="hmg-ai-audio-duration"><?php echo esc_html($audio_duration); ?></div>
-                    <?php endif; ?>
-                </div>
-            </div>
-        <?php elseif ($atts['style'] === 'minimal'): ?>
-            <div class="hmg-ai-audio-minimal">
-                <button class="hmg-ai-audio-play-button" data-hmg-audio-toggle aria-label="Play audio">
-                    <svg class="hmg-ai-play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M8 5v14l11-7z"/>
-                    </svg>
-                    <svg class="hmg-ai-pause-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
-                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-                    </svg>
-                </button>
-                <div class="hmg-ai-audio-info">
-                    <div class="hmg-ai-audio-track-title"><?php echo esc_html($audio_title); ?></div>
-                    <div class="hmg-ai-audio-progress">
-                        <div class="hmg-ai-audio-progress-bar" data-hmg-audio-progress></div>
-                    </div>
-                </div>
-                <audio 
-                    class="hmg-ai-audio-element" 
-                    preload="metadata"
-                    data-hmg-audio-source
-                    aria-label="Audio version of <?php echo esc_attr($audio_title); ?>"
-                >
-                    <source src="<?php echo esc_url($audio_url); ?>" type="audio/mpeg">
-                </audio>
-            </div>
-        <?php elseif ($atts['style'] === 'card'): ?>
-            <div class="hmg-ai-audio-card">
-                <div class="hmg-ai-audio-card-header">
-                    <div class="hmg-ai-audio-artwork">
-                        <div class="hmg-ai-audio-artwork-placeholder">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="hmg-ai-audio-card-info">
-                        <h4 class="hmg-ai-audio-card-title"><?php echo esc_html($audio_title); ?></h4>
-                        <div class="hmg-ai-audio-card-meta">
-                            <?php if ($audio_duration): ?>
-                                <span class="hmg-ai-audio-duration"><?php echo esc_html($audio_duration); ?></span>
-                            <?php endif; ?>
-                            <?php if ($audio_size): ?>
-                                <span class="hmg-ai-separator">•</span>
-                                <span class="hmg-ai-audio-size"><?php echo esc_html($audio_size); ?></span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                <div class="hmg-ai-audio-card-controls">
-                    <audio 
-                        class="hmg-ai-audio-element" 
-                        controls 
-                        preload="metadata"
-                        aria-label="Audio version of <?php echo esc_attr($audio_title); ?>"
-                    >
-                        <source src="<?php echo esc_url($audio_url); ?>" type="audio/mpeg">
-                        <p>Your browser doesn't support HTML5 audio. <a href="<?php echo esc_url($audio_url); ?>">Download the audio file</a>.</p>
-                    </audio>
-                </div>
-                <div class="hmg-ai-audio-card-actions">
-                    <a 
-                        href="<?php echo esc_url($audio_url); ?>" 
-                        class="hmg-ai-audio-download" 
-                        download
-                        aria-label="Download audio file"
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-                        </svg>
-                        Download
-                    </a>
-                    <button 
-                        class="hmg-ai-audio-speed" 
-                        data-hmg-audio-speed
-                        aria-label="Playback speed"
-                    >
-                        1x
-                    </button>
-                </div>
-            </div>
-        <?php else: // player style (default) ?>
-            <div class="hmg-ai-audio-player">
-                <div class="hmg-ai-audio-player-header">
-                    <div class="hmg-ai-audio-player-info">
-                        <h4 class="hmg-ai-audio-player-title"><?php echo esc_html($audio_title); ?></h4>
-                        <div class="hmg-ai-audio-player-meta">
-                            <span class="hmg-ai-audio-type">Audio Article</span>
-                            <?php if ($audio_duration): ?>
-                                <span class="hmg-ai-separator">•</span>
-                                <span class="hmg-ai-audio-duration"><?php echo esc_html($audio_duration); ?></span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    <div class="hmg-ai-audio-player-actions">
-                        <button 
-                            class="hmg-ai-audio-speed-toggle" 
-                            data-hmg-audio-speed
-                            aria-label="Playback speed"
-                        >
-                            1x
-                        </button>
-                    </div>
-                </div>
-                <div class="hmg-ai-audio-player-controls">
-                    <audio 
-                        class="hmg-ai-audio-element" 
-                        controls 
-                        preload="metadata"
-                        aria-label="Audio version of <?php echo esc_attr($audio_title); ?>"
-                    >
-                        <source src="<?php echo esc_url($audio_url); ?>" type="audio/mpeg">
-                        <p>Your browser doesn't support HTML5 audio. <a href="<?php echo esc_url($audio_url); ?>">Download the audio file</a>.</p>
-                    </audio>
-                </div>
-            </div>
-        <?php endif; ?>
-    </div>
-    
-    <div class="hmg-ai-audio-footer">
-        <div class="hmg-ai-meta">
-            <span class="hmg-ai-generated">AI-generated audio</span>
-            <span class="hmg-ai-separator">•</span>
-            <a href="<?php echo esc_url($audio_url); ?>" class="hmg-ai-download-link" download>
-                Download MP3
+    <?php elseif ($style === 'compact'): ?>
+        <div class="hmg-ai-audio-compact">
+            <span class="hmg-ai-audio-icon">🎧</span>
+            <audio controls class="hmg-ai-audio-element">
+                <source src="<?php echo esc_url($audio_data['url']); ?>" type="audio/mpeg">
+                <?php _e('Your browser does not support the audio element.', 'hmg-ai-blog-enhancer'); ?>
+            </audio>
+            <a href="<?php echo esc_url($audio_data['url']); ?>" 
+               download class="hmg-ai-audio-download-icon" 
+               title="<?php _e('Download', 'hmg-ai-blog-enhancer'); ?>">
+                ⬇
             </a>
         </div>
+    
+    <?php elseif ($style === 'minimal'): ?>
+        <div class="hmg-ai-audio-minimal">
+            <button class="hmg-ai-audio-play-button" data-audio-url="<?php echo esc_url($audio_data['url']); ?>">
+                <span class="hmg-ai-play-icon">▶</span>
+                <span class="hmg-ai-pause-icon" style="display:none;">⏸</span>
+                <?php _e('Play Audio Version', 'hmg-ai-blog-enhancer'); ?>
+            </button>
+            <div class="hmg-ai-audio-progress" style="display:none;">
+                <div class="hmg-ai-audio-progress-bar"></div>
+            </div>
+        </div>
+    
+    <?php else: // player (default) ?>
+        <div class="hmg-ai-audio-player">
+            <h4 class="hmg-ai-audio-title">
+                <span class="hmg-ai-audio-icon">🎧</span>
+                <?php _e('Audio Version', 'hmg-ai-blog-enhancer'); ?>
+            </h4>
+            <audio controls class="hmg-ai-audio-element" preload="metadata">
+                <source src="<?php echo esc_url($audio_data['url']); ?>" type="audio/mpeg">
+                <?php _e('Your browser does not support the audio element.', 'hmg-ai-blog-enhancer'); ?>
+            </audio>
+            <div class="hmg-ai-audio-controls">
+                <button class="hmg-ai-audio-speed" data-speed="1">1x</button>
+                <button class="hmg-ai-audio-speed" data-speed="1.25">1.25x</button>
+                <button class="hmg-ai-audio-speed" data-speed="1.5">1.5x</button>
+                <button class="hmg-ai-audio-speed" data-speed="2">2x</button>
+                <a href="<?php echo esc_url($audio_data['url']); ?>" 
+                   download="<?php echo esc_attr(sanitize_file_name($audio_data['title']) . '.mp3'); ?>"
+                   class="hmg-ai-audio-download">
+                    <?php _e('Download', 'hmg-ai-blog-enhancer'); ?>
+                </a>
+            </div>
+        </div>
+    <?php endif; ?>
+    
+    <div class="hmg-ai-powered-by">
+        <small><?php _e('AI-Powered Audio by', 'hmg-ai-blog-enhancer'); ?> 
+        <a href="https://haleymarketing.com" target="_blank" rel="noopener">Haley Marketing</a></small>
     </div>
-</div> 
+</div>
+
+<?php if ($style === 'minimal'): ?>
+<script>
+(function() {
+    const button = document.querySelector('.hmg-ai-audio-minimal .hmg-ai-audio-play-button');
+    if (button) {
+        let audio = null;
+        button.addEventListener('click', function() {
+            const url = this.dataset.audioUrl;
+            const playIcon = this.querySelector('.hmg-ai-play-icon');
+            const pauseIcon = this.querySelector('.hmg-ai-pause-icon');
+            
+            if (!audio) {
+                audio = new Audio(url);
+                audio.addEventListener('ended', function() {
+                    playIcon.style.display = 'inline';
+                    pauseIcon.style.display = 'none';
+                });
+            }
+            
+            if (audio.paused) {
+                audio.play();
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'inline';
+            } else {
+                audio.pause();
+                playIcon.style.display = 'inline';
+                pauseIcon.style.display = 'none';
+            }
+        });
+    }
+})();
+</script>
+<?php elseif ($style === 'player'): ?>
+<script>
+(function() {
+    const player = document.querySelector('.hmg-ai-audio-player');
+    if (player) {
+        const audio = player.querySelector('.hmg-ai-audio-element');
+        const speedButtons = player.querySelectorAll('.hmg-ai-audio-speed');
+        
+        speedButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const speed = parseFloat(this.dataset.speed);
+                audio.playbackRate = speed;
+                
+                speedButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    }
+})();
+</script>
+<?php endif; ?>

@@ -428,41 +428,78 @@ class HMG_AI_Admin {
      * @since    1.0.0
      */
     public function ajax_generate_takeaways() {
-        // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
-            wp_die(__('Security check failed', 'hmg-ai-blog-enhancer'));
-        }
+        try {
+            // Verify nonce
+            if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
+                wp_send_json_error(array(
+                    'message' => __('Security check failed', 'hmg-ai-blog-enhancer')
+                ));
+                return;
+            }
 
-        // Check user capabilities
-        if (!current_user_can('edit_posts')) {
-            wp_die(__('Insufficient permissions', 'hmg-ai-blog-enhancer'));
-        }
+            // Check user capabilities
+            if (!current_user_can('edit_posts')) {
+                wp_send_json_error(array(
+                    'message' => __('Insufficient permissions', 'hmg-ai-blog-enhancer')
+                ));
+                return;
+            }
 
-        // Get content and post ID
-        $content = sanitize_textarea_field($_POST['content'] ?? '');
-        $post_id = (int) ($_POST['post_id'] ?? 0);
+            // Get content and post ID
+            $content = sanitize_textarea_field($_POST['content'] ?? '');
+            $post_id = (int) ($_POST['post_id'] ?? 0);
 
-        if (empty($content)) {
-            wp_send_json_error(array(
-                'message' => __('No content provided for analysis.', 'hmg-ai-blog-enhancer')
-            ));
-        }
+            if (empty($content)) {
+                wp_send_json_error(array(
+                    'message' => __('No content provided for analysis.', 'hmg-ai-blog-enhancer')
+                ));
+                return;
+            }
 
-        // Generate takeaways using AI service manager
-        $result = $this->ai_service_manager->generate_content('takeaways', $content, $post_id);
+            // Generate takeaways using AI service manager
+            $result = $this->ai_service_manager->generate_content('takeaways', $content, $post_id);
 
         if ($result['success']) {
+            // Save generated content as post meta
+            if ($post_id > 0) {
+                update_post_meta($post_id, '_hmg_ai_takeaways', $result['content']);
+                update_post_meta($post_id, '_hmg_ai_takeaways_generated', current_time('mysql'));
+            }
+
+            // Get updated usage stats
+            $updated_stats = $this->auth_service->get_spending_stats();
+
             wp_send_json_success(array(
                 'content' => $result['content'],
-                'message' => $result['message'],
+                'message' => $result['message'] ?? __('Takeaways generated successfully!', 'hmg-ai-blog-enhancer'),
                 'provider_used' => $result['provider_name'] ?? 'AI Service',
                 'tokens_used' => $result['tokens_used'] ?? 0,
                 'generation_time' => $result['generation_time'] ?? 0,
-                'cached' => $result['cached'] ?? false
+                'cached' => $result['cached'] ?? false,
+                'usage' => array(
+                    'spending' => array(
+                        'used' => $updated_stats['monthly']['spent'],
+                        'limit' => $updated_stats['monthly']['limit'],
+                        'percentage' => $updated_stats['monthly']['percentage']
+                    ),
+                    'api_calls' => $updated_stats['monthly']['requests'],
+                    'tokens' => $updated_stats['monthly']['tokens'],
+                    'reset_date' => $updated_stats['reset_date']
+                )
             ));
-        } else {
+            } else {
+                wp_send_json_error(array(
+                    'message' => $result['error']
+                ));
+            }
+            
+        } catch (Exception $e) {
             wp_send_json_error(array(
-                'message' => $result['error']
+                'message' => 'Error: ' . $e->getMessage()
+            ));
+        } catch (Error $e) {
+            wp_send_json_error(array(
+                'message' => 'Fatal Error: ' . $e->getMessage()
             ));
         }
     }
@@ -473,41 +510,78 @@ class HMG_AI_Admin {
      * @since    1.0.0
      */
     public function ajax_generate_faq() {
-        // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
-            wp_die(__('Security check failed', 'hmg-ai-blog-enhancer'));
-        }
+        try {
+            // Verify nonce
+            if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
+                wp_send_json_error(array(
+                    'message' => __('Security check failed', 'hmg-ai-blog-enhancer')
+                ));
+                return;
+            }
 
-        // Check user capabilities
-        if (!current_user_can('edit_posts')) {
-            wp_die(__('Insufficient permissions', 'hmg-ai-blog-enhancer'));
-        }
+            // Check user capabilities
+            if (!current_user_can('edit_posts')) {
+                wp_send_json_error(array(
+                    'message' => __('Insufficient permissions', 'hmg-ai-blog-enhancer')
+                ));
+                return;
+            }
 
-        // Get content and post ID
-        $content = sanitize_textarea_field($_POST['content'] ?? '');
-        $post_id = (int) ($_POST['post_id'] ?? 0);
+            // Get content and post ID
+            $content = sanitize_textarea_field($_POST['content'] ?? '');
+            $post_id = (int) ($_POST['post_id'] ?? 0);
 
-        if (empty($content)) {
-            wp_send_json_error(array(
-                'message' => __('No content provided for analysis.', 'hmg-ai-blog-enhancer')
-            ));
-        }
+            if (empty($content)) {
+                wp_send_json_error(array(
+                    'message' => __('No content provided for analysis.', 'hmg-ai-blog-enhancer')
+                ));
+                return;
+            }
 
-        // Generate FAQ using AI service manager
-        $result = $this->ai_service_manager->generate_content('faq', $content, $post_id);
+            // Generate FAQ using AI service manager
+            $result = $this->ai_service_manager->generate_content('faq', $content, $post_id);
 
         if ($result['success']) {
+            // Save generated content as post meta
+            if ($post_id > 0) {
+                update_post_meta($post_id, '_hmg_ai_faq', $result['content']);
+                update_post_meta($post_id, '_hmg_ai_faq_generated', current_time('mysql'));
+            }
+
+            // Get updated usage stats
+            $updated_stats = $this->auth_service->get_spending_stats();
+
             wp_send_json_success(array(
                 'content' => $result['content'],
-                'message' => $result['message'],
+                'message' => $result['message'] ?? __('FAQ generated successfully!', 'hmg-ai-blog-enhancer'),
                 'provider_used' => $result['provider_name'] ?? 'AI Service',
                 'tokens_used' => $result['tokens_used'] ?? 0,
                 'generation_time' => $result['generation_time'] ?? 0,
-                'cached' => $result['cached'] ?? false
+                'cached' => $result['cached'] ?? false,
+                'usage' => array(
+                    'spending' => array(
+                        'used' => $updated_stats['monthly']['spent'],
+                        'limit' => $updated_stats['monthly']['limit'],
+                        'percentage' => $updated_stats['monthly']['percentage']
+                    ),
+                    'api_calls' => $updated_stats['monthly']['requests'],
+                    'tokens' => $updated_stats['monthly']['tokens'],
+                    'reset_date' => $updated_stats['reset_date']
+                )
             ));
-        } else {
+            } else {
+                wp_send_json_error(array(
+                    'message' => $result['error']
+                ));
+            }
+            
+        } catch (Exception $e) {
             wp_send_json_error(array(
-                'message' => $result['error']
+                'message' => 'Error: ' . $e->getMessage()
+            ));
+        } catch (Error $e) {
+            wp_send_json_error(array(
+                'message' => 'Fatal Error: ' . $e->getMessage()
             ));
         }
     }
@@ -518,41 +592,78 @@ class HMG_AI_Admin {
      * @since    1.0.0
      */
     public function ajax_generate_toc() {
-        // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
-            wp_die(__('Security check failed', 'hmg-ai-blog-enhancer'));
-        }
+        try {
+            // Verify nonce
+            if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
+                wp_send_json_error(array(
+                    'message' => __('Security check failed', 'hmg-ai-blog-enhancer')
+                ));
+                return;
+            }
 
-        // Check user capabilities
-        if (!current_user_can('edit_posts')) {
-            wp_die(__('Insufficient permissions', 'hmg-ai-blog-enhancer'));
-        }
+            // Check user capabilities
+            if (!current_user_can('edit_posts')) {
+                wp_send_json_error(array(
+                    'message' => __('Insufficient permissions', 'hmg-ai-blog-enhancer')
+                ));
+                return;
+            }
 
-        // Get content and post ID
-        $content = sanitize_textarea_field($_POST['content'] ?? '');
-        $post_id = (int) ($_POST['post_id'] ?? 0);
+            // Get content and post ID
+            $content = sanitize_textarea_field($_POST['content'] ?? '');
+            $post_id = (int) ($_POST['post_id'] ?? 0);
 
-        if (empty($content)) {
+            if (empty($content)) {
+                wp_send_json_error(array(
+                    'message' => __('No content provided for analysis.', 'hmg-ai-blog-enhancer')
+                ));
+                return;
+            }
+
+            // Generate TOC using AI service manager
+            $result = $this->ai_service_manager->generate_content('toc', $content, $post_id);
+
+            if ($result['success']) {
+                // Save generated content as post meta
+                if ($post_id > 0) {
+                    update_post_meta($post_id, '_hmg_ai_toc', $result['content']);
+                    update_post_meta($post_id, '_hmg_ai_toc_generated', current_time('mysql'));
+                }
+
+                // Get updated usage stats
+                $updated_stats = $this->auth_service->get_spending_stats();
+
+                wp_send_json_success(array(
+                    'content' => $result['content'],
+                    'message' => $result['message'] ?? __('Table of Contents generated successfully!', 'hmg-ai-blog-enhancer'),
+                    'provider_used' => $result['provider_name'] ?? 'AI Service',
+                    'tokens_used' => $result['tokens_used'] ?? 0,
+                    'generation_time' => $result['generation_time'] ?? 0,
+                    'cached' => $result['cached'] ?? false,
+                    'usage' => array(
+                        'spending' => array(
+                            'used' => $updated_stats['monthly']['spent'],
+                            'limit' => $updated_stats['monthly']['limit'],
+                            'percentage' => $updated_stats['monthly']['percentage']
+                        ),
+                        'api_calls' => $updated_stats['monthly']['requests'],
+                        'tokens' => $updated_stats['monthly']['tokens'],
+                        'reset_date' => $updated_stats['reset_date']
+                    )
+                ));
+            } else {
+                wp_send_json_error(array(
+                    'message' => $result['error']
+                ));
+            }
+            
+        } catch (Exception $e) {
             wp_send_json_error(array(
-                'message' => __('No content provided for analysis.', 'hmg-ai-blog-enhancer')
+                'message' => 'Error: ' . $e->getMessage()
             ));
-        }
-
-        // Generate TOC using AI service manager
-        $result = $this->ai_service_manager->generate_content('toc', $content, $post_id);
-
-        if ($result['success']) {
-            wp_send_json_success(array(
-                'content' => $result['content'],
-                'message' => $result['message'],
-                'provider_used' => $result['provider_name'] ?? 'AI Service',
-                'tokens_used' => $result['tokens_used'] ?? 0,
-                'generation_time' => $result['generation_time'] ?? 0,
-                'cached' => $result['cached'] ?? false
-            ));
-        } else {
+        } catch (Error $e) {
             wp_send_json_error(array(
-                'message' => $result['error']
+                'message' => 'Fatal Error: ' . $e->getMessage()
             ));
         }
     }
@@ -636,14 +747,26 @@ class HMG_AI_Admin {
         }
 
         // Check user capabilities
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('edit_posts')) {
             wp_die(__('Insufficient permissions', 'hmg-ai-blog-enhancer'));
         }
 
-        // Get real usage statistics from auth service
-        $usage_stats = $this->auth_service->get_usage_stats();
+        // Get spending statistics from auth service
+        $spending_stats = $this->auth_service->get_spending_stats();
         
-        wp_send_json_success($usage_stats);
+        // Format for JavaScript consumption
+        $formatted_stats = array(
+            'spending' => array(
+                'used' => $spending_stats['monthly']['spent'],
+                'limit' => $spending_stats['monthly']['limit'],
+                'percentage' => $spending_stats['monthly']['percentage']
+            ),
+            'api_calls' => $spending_stats['monthly']['requests'],
+            'tokens' => $spending_stats['monthly']['tokens'],
+            'reset_date' => $spending_stats['reset_date']
+        );
+        
+        wp_send_json_success($formatted_stats);
     }
 
     /**

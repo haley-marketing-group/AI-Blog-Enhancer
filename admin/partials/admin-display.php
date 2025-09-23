@@ -20,6 +20,22 @@ if (!defined('WPINC')) {
 $auth_service = new HMG_AI_Auth_Service();
 $auth_status = $auth_service->get_auth_status();
 $usage_stats = $auth_service->get_usage_stats();
+
+// Ensure required array keys exist with defaults
+$auth_status = wp_parse_args($auth_status, array(
+    'authenticated' => false,
+    'tier' => 'free',
+    'method' => 'standalone',
+    'user_id' => get_current_user_id()
+));
+
+$usage_stats = wp_parse_args($usage_stats, array(
+    'api_calls_used' => 0,
+    'api_calls_limit' => 1000,
+    'tokens_used' => 0,
+    'tokens_limit' => 1000000,
+    'reset_date' => date('Y-m-01')
+));
 ?>
 
 <div class="hmg-ai-admin-wrap">
@@ -73,14 +89,14 @@ $usage_stats = $auth_service->get_usage_stats();
                 </p>
                 <p>
                     <strong><?php _e('Tier:', 'hmg-ai-blog-enhancer'); ?></strong> 
-                    <?php echo esc_html(ucfirst($auth_status['tier'])); ?>
-                    <?php if ($auth_status['method'] === 'development'): ?>
+                    <?php echo esc_html(ucfirst($auth_status['tier'] ?? 'free')); ?>
+                    <?php if (isset($auth_status['method']) && $auth_status['method'] === 'development'): ?>
                         <span style="color: var(--hmg-orange); font-size: 12px;">(Development)</span>
                     <?php endif; ?>
                 </p>
                 <p>
                     <strong><?php _e('Method:', 'hmg-ai-blog-enhancer'); ?></strong> 
-                    <?php echo esc_html(ucfirst(str_replace('_', ' ', $auth_status['method']))); ?>
+                    <?php echo esc_html(ucfirst(str_replace('_', ' ', $auth_status['method'] ?? 'standalone'))); ?>
                 </p>
             </div>
 
@@ -92,10 +108,15 @@ $usage_stats = $auth_service->get_usage_stats();
                 <div class="hmg-ai-usage-section">
                     <label><?php _e('API Calls', 'hmg-ai-blog-enhancer'); ?></label>
                     <div class="hmg-ai-usage-bar">
-                        <div class="hmg-ai-usage-fill api-calls" style="width: <?php echo ($usage_stats['api_calls_used'] / $usage_stats['api_calls_limit']) * 100; ?>%"></div>
+                        <?php 
+                        $api_calls_used = $usage_stats['api_calls_used'] ?? 0;
+                        $api_calls_limit = $usage_stats['api_calls_limit'] ?? 1000;
+                        $api_percentage = $api_calls_limit > 0 ? ($api_calls_used / $api_calls_limit) * 100 : 0;
+                        ?>
+                        <div class="hmg-ai-usage-fill api-calls" style="width: <?php echo min($api_percentage, 100); ?>%"></div>
                     </div>
                     <div class="hmg-ai-usage-stats">
-                        <span><?php echo number_format($usage_stats['api_calls_used']); ?> / <?php echo number_format($usage_stats['api_calls_limit']); ?></span>
+                        <span><?php echo number_format($api_calls_used); ?> / <?php echo number_format($api_calls_limit); ?></span>
                     </div>
                 </div>
 
@@ -103,15 +124,20 @@ $usage_stats = $auth_service->get_usage_stats();
                 <div class="hmg-ai-usage-section">
                     <label><?php _e('Tokens', 'hmg-ai-blog-enhancer'); ?></label>
                     <div class="hmg-ai-usage-bar">
-                        <div class="hmg-ai-usage-fill tokens" style="width: <?php echo ($usage_stats['tokens_used'] / $usage_stats['tokens_limit']) * 100; ?>%"></div>
+                        <?php 
+                        $tokens_used = $usage_stats['tokens_used'] ?? 0;
+                        $tokens_limit = $usage_stats['tokens_limit'] ?? 1000000;
+                        $token_percentage = $tokens_limit > 0 ? ($tokens_used / $tokens_limit) * 100 : 0;
+                        ?>
+                        <div class="hmg-ai-usage-fill tokens" style="width: <?php echo min($token_percentage, 100); ?>%"></div>
                     </div>
                     <div class="hmg-ai-usage-stats">
-                        <span><?php echo number_format($usage_stats['tokens_used']); ?> / <?php echo number_format($usage_stats['tokens_limit']); ?></span>
+                        <span><?php echo number_format($tokens_used); ?> / <?php echo number_format($tokens_limit); ?></span>
                     </div>
                 </div>
 
                 <p style="text-align: center; margin-top: 15px;">
-                    <small><?php _e('Resets on:', 'hmg-ai-blog-enhancer'); ?> <?php echo date('M j, Y', strtotime($usage_stats['reset_date'])); ?></small>
+                    <small><?php _e('Resets on:', 'hmg-ai-blog-enhancer'); ?> <?php echo date('M j, Y', strtotime($usage_stats['reset_date'] ?? date('Y-m-01'))); ?></small>
                 </p>
             </div>
 
@@ -139,6 +165,7 @@ $usage_stats = $auth_service->get_usage_stats();
             global $wpdb;
             $usage_table = $wpdb->prefix . 'hmg_ai_usage';
             
+            $user_id = $auth_status['user_id'] ?? get_current_user_id();
             $recent_activity = $wpdb->get_results($wpdb->prepare(
                 "SELECT u.*, p.post_title 
                 FROM {$usage_table} u 
@@ -146,7 +173,7 @@ $usage_stats = $auth_service->get_usage_stats();
                 WHERE u.user_id = %s 
                 ORDER BY u.created_at DESC 
                 LIMIT 10",
-                $auth_status['user_id']
+                $user_id
             ));
             
             if ($recent_activity): ?>
@@ -191,7 +218,6 @@ $usage_stats = $auth_service->get_usage_stats();
                 <h3><?php _e('✨ Available Features', 'hmg-ai-blog-enhancer'); ?></h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                     <?php
-                    $user_tier = $auth_service->get_user_tier();
                     $features = array(
                         'takeaways' => array('name' => 'Key Takeaways', 'icon' => '💡'),
                         'faq' => array('name' => 'FAQ Generation', 'icon' => '❓'),
@@ -201,7 +227,7 @@ $usage_stats = $auth_service->get_usage_stats();
                     );
                     
                     foreach ($features as $feature_key => $feature):
-                        $has_access = in_array($feature_key, $user_tier['features']);
+                        $has_access = $auth_service->has_feature_access($feature_key);
                     ?>
                         <div style="padding: 15px; border: 1px solid #E1E5E9; border-radius: 8px; text-align: center; <?php echo $has_access ? 'background: #F0F9F0;' : 'background: #F8F9FA; opacity: 0.6;'; ?>">
                             <div style="font-size: 24px; margin-bottom: 8px;"><?php echo $feature['icon']; ?></div>

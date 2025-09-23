@@ -70,8 +70,14 @@ $auth_status = $auth_service->get_auth_status();
                         <div class="hmg-ai-usage-fill spending" data-width="<?php echo min(100, $spending_stats['monthly']['percentage']); ?>"></div>
                     </div>
                     <div class="hmg-ai-usage-stats">
-                        <span class="spending-used">$<?php echo number_format($spending_stats['monthly']['spent'], 2); ?></span> / 
-                        <span class="spending-limit">$<?php echo number_format($spending_stats['monthly']['limit'], 2); ?></span>
+                        <span class="spending-used">$<?php 
+                            $spent = $spending_stats['monthly']['spent'];
+                            echo $spent < 0.01 ? number_format($spent, 4) : ($spent < 1 ? number_format($spent, 3) : number_format($spent, 2));
+                        ?></span> / 
+                        <span class="spending-limit">$<?php 
+                            $limit = $spending_stats['monthly']['limit'];
+                            echo $limit < 0.01 ? number_format($limit, 4) : ($limit < 1 ? number_format($limit, 3) : number_format($limit, 2));
+                        ?></span>
                         <span class="spending-percentage">(<?php echo number_format($spending_stats['monthly']['percentage'], 1); ?>%)</span>
                     </div>
                 </div>

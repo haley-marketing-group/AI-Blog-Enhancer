@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Meta Box - HMG AI Blog Enhancer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+        .main-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+        h1 {
+            color: #332A86;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: #214357;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #332A86;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            font-size: 14px;
+        }
+        .button:hover {
+            background: #4A3BA0;
+        }
+        .button.secondary {
+            background: #5E9732;
+        }
+        .button.secondary:hover {
+            background: #4A7A26;
+        }
+        .success {
+            background: #E8F5E8;
+            border-left: 4px solid #5E9732;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .error {
+            background: #FFF0EE;
+            border-left: 4px solid #8A1F03;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info {
+            background: #E6F4FA;
+            border-left: 4px solid #48A4DD;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: monospace;
+        }
+        .shortcode-preview {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .shortcode-preview h3 {
+            margin-top: 0;
+            color: #332A86;
+        }
+        .meta-box {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+        .meta-box-header {
+            padding: 12px 15px;
+            background: #332A86;
+            color: white;
+            font-weight: 600;
+            border-radius: 4px 4px 0 0;
+        }
+        .meta-box-content {
+            padding: 20px;
+        }
+        .usage-bar {
+            background: #e0e0e0;
+            height: 8px;
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .usage-fill {
+            background: #5E9732;
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        .generated-content {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .generated-content h4 {
+            margin-top: 0;
+            color: #214357;
+        }
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <h1>🧪 Meta Box Testing - HMG AI Blog Enhancer</h1>
+            <p>This page simulates the WordPress post editor with our AI meta box.</p>
+
+            <div class="test-section">
+                <h2>📝 Post Content</h2>
+                <textarea id="post-content" placeholder="Enter your post content here...">
+WordPress Security Best Practices for 2025
+
+As WordPress continues to power over 43% of all websites on the internet, security remains a top priority for website owners and developers. In 2025, the threat landscape has evolved, making it more important than ever to implement robust security measures.
+
+## Why WordPress Security Matters
+
+WordPress's popularity makes it an attractive target for hackers and malicious actors. A single vulnerability can lead to data breaches, website defacement, or complete loss of your online presence. However, with proper security measures in place, WordPress can be as secure as any enterprise-level CMS.
+
+## Essential Security Measures
+
+### 1. Keep Everything Updated
+Regular updates are your first line of defense. This includes:
+- WordPress core updates
+- Theme updates
+- Plugin updates
+- PHP version updates
+
+### 2. Strong Authentication
+Implement multiple layers of authentication:
+- Use complex, unique passwords
+- Enable two-factor authentication (2FA)
+- Limit login attempts
+- Consider passwordless authentication methods
+
+### 3. Choose Quality Hosting
+Your hosting provider plays a crucial role in security:
+- Select hosts with strong security track records
+- Ensure SSL certificates are implemented
+- Look for hosts offering automated backups
+- Consider managed WordPress hosting for added security
+
+### 4. Security Plugins
+Professional security plugins add essential protection:
+- Wordfence or Sucuri for comprehensive security
+- Web Application Firewall (WAF) protection
+- Malware scanning and removal
+- Real-time threat detection
+
+### 5. Regular Backups
+Backups are your safety net:
+- Schedule automated daily backups
+- Store backups in multiple locations
+- Test backup restoration regularly
+- Keep at least 30 days of backup history
+
+## Conclusion
+
+WordPress security in 2025 requires a proactive, multi-layered approach. By implementing these best practices, you can significantly reduce your risk of security breaches and maintain a robust, secure online presence.
+                </textarea>
+            </div>
+
+            <div class="test-controls">
+                <button class="button" onclick="testGeneration('takeaways')">Generate Takeaways</button>
+                <button class="button secondary" onclick="testGeneration('faq')">Generate FAQ</button>
+                <button class="button" onclick="testGeneration('toc')">Generate Table of Contents</button>
+            </div>
+
+            <div id="results"></div>
+
+            <div class="test-section">
+                <h2>🎯 Shortcode Examples</h2>
+                
+                <div class="shortcode-preview">
+                    <h3>Key Takeaways</h3>
+                    <code>[hmg_ai_takeaways]</code><br>
+                    <code>[hmg_ai_takeaways style="cards"]</code><br>
+                    <code>[hmg_ai_takeaways style="numbered"]</code><br>
+                    <code>[hmg_ai_takeaways style="highlights"]</code>
+                </div>
+
+                <div class="shortcode-preview">
+                    <h3>FAQ Section</h3>
+                    <code>[hmg_ai_faq]</code><br>
+                    <code>[hmg_ai_faq style="accordion"]</code><br>
+                    <code>[hmg_ai_faq style="list"]</code><br>
+                    <code>[hmg_ai_faq style="cards"]</code>
+                </div>
+
+                <div class="shortcode-preview">
+                    <h3>Table of Contents</h3>
+                    <code>[hmg_ai_toc]</code><br>
+                    <code>[hmg_ai_toc style="numbered"]</code><br>
+                    <code>[hmg_ai_toc style="horizontal"]</code><br>
+                    <code>[hmg_ai_toc style="minimal"]</code><br>
+                    <code>[hmg_ai_toc style="sidebar"]</code>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="meta-box">
+                <div class="meta-box-header">
+                    HMG AI Content Generator
+                </div>
+                <div class="meta-box-content">
+                    <div class="success" style="margin-top: 0;">
+                        <strong>✅ Connected</strong><br>
+                        <small>AI Provider configured</small>
+                    </div>
+
+                    <h4>📊 Usage This Month</h4>
+                    <div>
+                        <small>Spending</small>
+                        <div class="usage-bar">
+                            <div class="usage-fill" style="width: 15%;"></div>
+                        </div>
+                        <small>$0.75 / $5.00</small>
+                    </div>
+
+                    <h4 style="margin-top: 20px;">⚡ Quick Actions</h4>
+                    <button class="button" style="width: 100%; margin: 5px 0;">
+                        💡 Generate Takeaways
+                    </button>
+                    <button class="button secondary" style="width: 100%; margin: 5px 0;">
+                        ❓ Generate FAQ
+                    </button>
+                    <button class="button" style="width: 100%; margin: 5px 0;">
+                        📋 Generate TOC
+                    </button>
+
+                    <h4 style="margin-top: 20px;">📚 Generated Content</h4>
+                    <div id="generated-list">
+                        <p style="color: #666; font-size: 13px; text-align: center;">
+                            No content generated yet
+                        </p>
+                    </div>
+
+                    <h4 style="margin-top: 20px;">💡 Tips</h4>
+                    <ul style="font-size: 13px; color: #666; padding-left: 20px;">
+                        <li>Write clear, structured content</li>
+                        <li>Use proper headings</li>
+                        <li>500+ words for best results</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function testGeneration(type) {
+            const content = document.getElementById('post-content').value;
+            if (!content) {
+                alert('Please add some content first!');
+                return;
+            }
+
+            const resultsDiv = document.getElementById('results');
+            const generatedList = document.getElementById('generated-list');
+            
+            // Show loading
+            resultsDiv.innerHTML = `
+                <div class="info">
+                    <strong>⏳ Generating ${type}...</strong><br>
+                    This would normally call the AI API to generate content.
+                </div>
+            `;
+
+            // Simulate API response
+            setTimeout(() => {
+                let generatedContent = '';
+                
+                if (type === 'takeaways') {
+                    generatedContent = `
+                        <div class="generated-content">
+                            <h4>✅ Key Takeaways Generated</h4>
+                            <ol>
+                                <li>Keep WordPress core, themes, and plugins updated regularly</li>
+                                <li>Implement strong authentication with complex passwords and 2FA</li>
+                                <li>Choose quality hosting with SSL certificates and automated backups</li>
+                                <li>Install professional security plugins like Wordfence or Sucuri</li>
+                                <li>Schedule automated daily backups with 30-day retention</li>
+                            </ol>
+                            <p><strong>Shortcode:</strong> <code>[hmg_ai_takeaways]</code></p>
+                        </div>
+                    `;
+                } else if (type === 'faq') {
+                    generatedContent = `
+                        <div class="generated-content">
+                            <h4>✅ FAQ Generated</h4>
+                            <dl>
+                                <dt><strong>Q: Why is WordPress security important in 2025?</strong></dt>
+                                <dd>A: With WordPress powering over 43% of websites, it's a prime target for hackers. Proper security prevents data breaches and maintains your online presence.</dd>
+                                
+                                <dt><strong>Q: What are the most critical security measures?</strong></dt>
+                                <dd>A: The most critical measures include regular updates, strong authentication with 2FA, quality hosting, security plugins, and automated backups.</dd>
+                                
+                                <dt><strong>Q: How often should I update WordPress?</strong></dt>
+                                <dd>A: Apply security updates immediately, major updates within a week of release, and check for updates at least weekly.</dd>
+                            </dl>
+                            <p><strong>Shortcode:</strong> <code>[hmg_ai_faq]</code></p>
+                        </div>
+                    `;
+                } else if (type === 'toc') {
+                    generatedContent = `
+                        <div class="generated-content">
+                            <h4>✅ Table of Contents Generated</h4>
+                            <ol>
+                                <li><a href="#why-wordpress-security-matters">Why WordPress Security Matters</a></li>
+                                <li><a href="#essential-security-measures">Essential Security Measures</a>
+                                    <ol>
+                                        <li><a href="#keep-everything-updated">Keep Everything Updated</a></li>
+                                        <li><a href="#strong-authentication">Strong Authentication</a></li>
+                                        <li><a href="#choose-quality-hosting">Choose Quality Hosting</a></li>
+                                        <li><a href="#security-plugins">Security Plugins</a></li>
+                                        <li><a href="#regular-backups">Regular Backups</a></li>
+                                    </ol>
+                                </li>
+                                <li><a href="#conclusion">Conclusion</a></li>
+                            </ol>
+                            <p><strong>Shortcode:</strong> <code>[hmg_ai_toc]</code></p>
+                        </div>
+                    `;
+                }
+                
+                resultsDiv.innerHTML = generatedContent;
+                
+                // Update sidebar
+                generatedList.innerHTML = `
+                    <div style="padding: 10px; background: #f0f9f0; border-radius: 4px; margin: 5px 0;">
+                        <strong>✓ ${type === 'takeaways' ? 'Takeaways' : type === 'faq' ? 'FAQ' : 'TOC'}</strong><br>
+                        <small style="color: #666;">Generated just now</small>
+                    </div>
+                `;
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

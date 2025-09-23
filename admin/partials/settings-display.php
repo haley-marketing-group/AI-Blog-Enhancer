@@ -22,6 +22,15 @@ $auth_status = $auth_service->get_auth_status();
 $current_api_key = $auth_service->get_stored_api_key();
 $options = get_option('hmg_ai_blog_enhancer_options', array());
 
+// Ensure auth_status has required keys
+$auth_status = wp_parse_args($auth_status, array(
+    'authenticated' => false,
+    'tier' => 'free',
+    'method' => 'standalone',
+    'user_id' => get_current_user_id(),
+    'spending_stats' => array()
+));
+
 // Handle form submission
 if (isset($_POST['submit']) && wp_verify_nonce($_POST['hmg_ai_settings_nonce'], 'hmg_ai_settings')) {
     $new_options = array();

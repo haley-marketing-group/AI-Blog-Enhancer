@@ -1,72 +1,92 @@
 /**
- * HMG AI Blog Enhancer - Admin JavaScript
- * 
- * Professional admin interface interactions with Haley Marketing polish
+ * HMG AI Blog Enhancer Admin JavaScript
+ *
+ * Handles all admin-side functionality including meta box interactions,
+ * AJAX content generation, and UI updates with professional polish.
+ *
+ * @package HMG_AI_Blog_Enhancer
+ * @since 1.0.0
  */
 
 (function($) {
     'use strict';
 
     /**
-     * Main admin object
+     * Main admin controller
      */
     const HMGAIAdmin = {
         
         /**
-         * Initialize admin functionality
+         * Initialize the admin interface
          */
         init: function() {
             this.bindEvents();
-            this.initializeComponents();
-            this.loadUsageStats();
+            this.initializeUsageBars();
+            this.setupAutoSave();
         },
 
         /**
-         * Bind event listeners
+         * Bind all event handlers
          */
         bindEvents: function() {
             // Content generation buttons
-            $(document).on('click', '.hmg-ai-generate-takeaways', this.generateTakeaways);
-            $(document).on('click', '.hmg-ai-generate-faq', this.generateFAQ);
-            $(document).on('click', '.hmg-ai-generate-toc', this.generateTOC);
-            $(document).on('click', '.hmg-ai-generate-audio', this.generateAudio);
+            $(document).on('click', '.hmg-ai-generate-takeaways', this.generateTakeaways.bind(this));
+            $(document).on('click', '.hmg-ai-generate-faq', this.generateFAQ.bind(this));
+            $(document).on('click', '.hmg-ai-generate-toc', this.generateTOC.bind(this));
+            $(document).on('click', '.hmg-ai-generate-audio', this.generateAudio.bind(this));
+
+            // Edit content buttons
+            $(document).on('click', '.hmg-ai-edit-content', this.editContent.bind(this));
+            $(document).on('click', '.hmg-ai-save-content', this.saveContent.bind(this));
+            $(document).on('click', '.hmg-ai-cancel-edit', this.cancelEdit.bind(this));
+            $(document).on('click', '.hmg-ai-regenerate', this.regenerateContent.bind(this));
+            $(document).on('click', '.hmg-ai-insert-shortcode', this.insertShortcode.bind(this));
+
+            // Test provider buttons
+            $(document).on('click', '.hmg-ai-test-providers', this.testProviders.bind(this));
             
-            // Content editing buttons
-            $(document).on('click', '.hmg-ai-edit-content', this.editContent);
-            $(document).on('click', '.hmg-ai-save-content', this.saveContent);
-            $(document).on('click', '.hmg-ai-cancel-edit', this.cancelEdit);
-            $(document).on('click', '.hmg-ai-insert-shortcode', this.insertShortcode);
+            // Settings page interactions
+            $('input[name="spending_limit_type"]').on('change', this.toggleCustomLimit);
             
-            // Settings validation
-            $(document).on('click', '.hmg-ai-validate-api-key', this.validateApiKey);
-            $(document).on('click', '.hmg-ai-test-providers', this.testAIProviders);
-            
-            // Spending limit toggle
-            $(document).on('change', 'input[name="spending_limit_type"]', this.toggleCustomLimit);
-            
-            // Form submissions - removed to allow normal PHP processing
-            
-            // Usage stats refresh
-            $(document).on('click', '.hmg-ai-refresh-stats', this.loadUsageStats);
-            
-            // Dismissible notices
-            $(document).on('click', '.hmg-ai-notice .notice-dismiss', this.dismissNotice);
+            // Refresh usage stats every 30 seconds if on editor page
+            if ($('.hmg-ai-meta-box').length > 0) {
+                setInterval(this.refreshUsageStats.bind(this), 30000);
+            }
         },
 
         /**
-         * Initialize UI components
+         * Initialize usage bar animations
          */
-        initializeComponents: function() {
-            // Initialize tooltips if available
-            if (typeof $.fn.tooltip === 'function') {
-                $('.hmg-ai-tooltip').tooltip();
+        initializeUsageBars: function() {
+            $('.hmg-ai-usage-fill').each(function() {
+                const $bar = $(this);
+                const width = $bar.data('width') || 0;
+                setTimeout(() => {
+                    $bar.css('width', width + '%');
+                }, 100);
+            });
+            
+            // Load fresh usage stats on page load
+            if ($('.hmg-ai-meta-box').length > 0) {
+                this.refreshUsageStats();
             }
-            
-            // Initialize usage meters
-            this.updateUsageMeters();
-            
-            // Auto-refresh usage stats every 5 minutes
-            setInterval(this.loadUsageStats.bind(this), 300000);
+        },
+
+        /**
+         * Setup auto-save for generated content
+         */
+        setupAutoSave: function() {
+            if (typeof wp !== 'undefined' && wp.autosave) {
+                const originalGetPostData = wp.autosave.getPostData;
+                wp.autosave.getPostData = function() {
+                    const data = originalGetPostData.apply(this, arguments);
+                    // Add our meta fields to autosave
+                    data.hmg_ai_auto_takeaways = $('#hmg_ai_auto_takeaways').is(':checked') ? '1' : '';
+                    data.hmg_ai_auto_faq = $('#hmg_ai_auto_faq').is(':checked') ? '1' : '';
+                    data.hmg_ai_auto_toc = $('#hmg_ai_auto_toc').is(':checked') ? '1' : '';
+                    return data;
+                };
+            }
         },
 
         /**
@@ -74,43 +94,23 @@
          */
         generateTakeaways: function(e) {
             e.preventDefault();
+            const $button = $(e.currentTarget);
+            const postId = $button.data('post-id');
             
-            const $button = $(this);
-            const postId = $button.data('post-id') || $('#post_ID').val();
-            const content = HMGAIAdmin.getPostContent();
-            
+            // Get post content
+            let content = '';
+            if (typeof wp !== 'undefined' && wp.data) {
+                content = wp.data.select('core/editor').getEditedPostContent();
+            } else {
+                content = $('#content').val();
+            }
+
             if (!content) {
-                HMGAIAdmin.showNotice('error', hmg_ai_ajax.strings.error + ' Please add some content first.');
+                this.showNotice('Please add some content to your post before generating takeaways.', 'warning');
                 return;
             }
-            
-            HMGAIAdmin.setLoadingState($button, true);
-            
-            $.ajax({
-                url: hmg_ai_ajax.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'hmg_generate_takeaways',
-                    nonce: hmg_ai_ajax.nonce,
-                    post_id: postId,
-                    content: content
-                },
-                success: function(response) {
-                    if (response.success) {
-                        HMGAIAdmin.insertGeneratedContent('takeaways', response.data.content);
-                        HMGAIAdmin.showNotice('success', response.data.message);
-                        HMGAIAdmin.updateUsageStats();
-                    } else {
-                        HMGAIAdmin.showNotice('error', response.data || hmg_ai_ajax.strings.error);
-                    }
-                },
-                error: function() {
-                    HMGAIAdmin.showNotice('error', hmg_ai_ajax.strings.error);
-                },
-                complete: function() {
-                    HMGAIAdmin.setLoadingState($button, false);
-                }
-            });
+
+            this.generateContent('takeaways', content, postId, $button);
         },
 
         /**
@@ -118,43 +118,22 @@
          */
         generateFAQ: function(e) {
             e.preventDefault();
+            const $button = $(e.currentTarget);
+            const postId = $button.data('post-id');
             
-            const $button = $(this);
-            const postId = $button.data('post-id') || $('#post_ID').val();
-            const content = HMGAIAdmin.getPostContent();
-            
+            let content = '';
+            if (typeof wp !== 'undefined' && wp.data) {
+                content = wp.data.select('core/editor').getEditedPostContent();
+            } else {
+                content = $('#content').val();
+            }
+
             if (!content) {
-                HMGAIAdmin.showNotice('error', hmg_ai_ajax.strings.error + ' Please add some content first.');
+                this.showNotice('Please add some content to your post before generating FAQ.', 'warning');
                 return;
             }
-            
-            HMGAIAdmin.setLoadingState($button, true);
-            
-            $.ajax({
-                url: hmg_ai_ajax.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'hmg_generate_faq',
-                    nonce: hmg_ai_ajax.nonce,
-                    post_id: postId,
-                    content: content
-                },
-                success: function(response) {
-                    if (response.success) {
-                        HMGAIAdmin.insertGeneratedContent('faq', response.data.content);
-                        HMGAIAdmin.showNotice('success', response.data.message);
-                        HMGAIAdmin.updateUsageStats();
-                    } else {
-                        HMGAIAdmin.showNotice('error', response.data || hmg_ai_ajax.strings.error);
-                    }
-                },
-                error: function() {
-                    HMGAIAdmin.showNotice('error', hmg_ai_ajax.strings.error);
-                },
-                complete: function() {
-                    HMGAIAdmin.setLoadingState($button, false);
-                }
-            });
+
+            this.generateContent('faq', content, postId, $button);
         },
 
         /**
@@ -162,334 +141,302 @@
          */
         generateTOC: function(e) {
             e.preventDefault();
+            const $button = $(e.currentTarget);
+            const postId = $button.data('post-id');
             
-            const $button = $(this);
-            const postId = $button.data('post-id') || $('#post_ID').val();
-            const content = HMGAIAdmin.getPostContent();
-            
+            let content = '';
+            if (typeof wp !== 'undefined' && wp.data) {
+                content = wp.data.select('core/editor').getEditedPostContent();
+            } else {
+                content = $('#content').val();
+            }
+
             if (!content) {
-                HMGAIAdmin.showNotice('error', hmg_ai_ajax.strings.error + ' Please add some content first.');
+                this.showNotice('Please add some content to your post before generating table of contents.', 'warning');
                 return;
             }
-            
-            HMGAIAdmin.setLoadingState($button, true);
-            
-            $.ajax({
-                url: hmg_ai_ajax.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'hmg_generate_toc',
-                    nonce: hmg_ai_ajax.nonce,
-                    post_id: postId,
-                    content: content
-                },
-                success: function(response) {
-                    if (response.success) {
-                        HMGAIAdmin.insertGeneratedContent('toc', response.data.content);
-                        HMGAIAdmin.showNotice('success', response.data.message);
-                        HMGAIAdmin.updateUsageStats();
-                    } else {
-                        HMGAIAdmin.showNotice('error', response.data || hmg_ai_ajax.strings.error);
-                    }
-                },
-                error: function() {
-                    HMGAIAdmin.showNotice('error', hmg_ai_ajax.strings.error);
-                },
-                complete: function() {
-                    HMGAIAdmin.setLoadingState($button, false);
-                }
-            });
+
+            this.generateContent('toc', content, postId, $button);
         },
 
         /**
-         * Generate audio via AJAX
+         * Generate audio version
          */
         generateAudio: function(e) {
             e.preventDefault();
+            const $button = $(e.currentTarget);
+            const postId = $button.data('post-id');
             
-            const $button = $(this);
-            const postId = $button.data('post-id') || $('#post_ID').val();
-            const content = HMGAIAdmin.getPostContent();
-            
-            if (!content) {
-                HMGAIAdmin.showNotice('error', hmg_ai_ajax.strings.error + ' Please add some content first.');
-                return;
-            }
-            
-            HMGAIAdmin.setLoadingState($button, true);
-            
-            $.ajax({
-                url: hmg_ai_ajax.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'hmg_generate_audio',
-                    nonce: hmg_ai_ajax.nonce,
-                    post_id: postId,
-                    content: content
-                },
-                success: function(response) {
-                    if (response.success) {
-                        HMGAIAdmin.showNotice('success', response.data.message);
-                        HMGAIAdmin.updateUsageStats();
-                        
-                        // Update audio player if available
-                        if (response.data.audio_url) {
-                            $('.hmg-ai-audio-player').attr('src', response.data.audio_url).show();
-                        }
-                    } else {
-                        HMGAIAdmin.showNotice('error', response.data || hmg_ai_ajax.strings.error);
-                    }
-                },
-                error: function() {
-                    HMGAIAdmin.showNotice('error', hmg_ai_ajax.strings.error);
-                },
-                complete: function() {
-                    HMGAIAdmin.setLoadingState($button, false);
-                }
-            });
-        },
-
-        /**
-         * Validate API key
-         */
-        validateApiKey: function(e) {
-            e.preventDefault();
-            
-            const $button = $(this);
-            const apiKey = $('#api_key').val();
-            
-            if (!apiKey) {
-                HMGAIAdmin.showNotice('error', 'Please enter an API key first.');
-                return;
-            }
-            
-            HMGAIAdmin.setLoadingState($button, true);
-            
-            $.ajax({
-                url: hmg_ai_ajax.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'hmg_validate_api_key',
-                    nonce: hmg_ai_ajax.nonce,
-                    api_key: apiKey
-                },
-                success: function(response) {
-                    if (response.success) {
-                        let message = response.data.message || 'API key is valid!';
-                        if (response.data.tier) {
-                            message += ' (Tier: ' + response.data.tier.charAt(0).toUpperCase() + response.data.tier.slice(1) + ')';
-                        }
-                        if (response.data.method) {
-                            message += ' [Method: ' + response.data.method.replace('_', ' ') + ']';
-                        }
-                        
-                        HMGAIAdmin.showNotice('success', message);
-                        $('.hmg-ai-api-status').removeClass('invalid').addClass('valid');
-                        $('.hmg-ai-user-tier').text(response.data.tier);
-                        
-                        // Optionally reload the page to show updated auth status
-                        setTimeout(function() {
-                            location.reload();
-                        }, 2000);
-                    } else {
-                        HMGAIAdmin.showNotice('error', response.data.message || 'API key validation failed.');
-                        $('.hmg-ai-api-status').removeClass('valid').addClass('invalid');
-                    }
-                },
-                error: function() {
-                    HMGAIAdmin.showNotice('error', 'API key validation failed.');
-                    $('.hmg-ai-api-status').removeClass('valid').addClass('invalid');
-                },
-                complete: function() {
-                    HMGAIAdmin.setLoadingState($button, false);
-                }
-            });
-        },
-
-        /**
-         * Load usage statistics
-         */
-        loadUsageStats: function() {
-            $.ajax({
-                url: hmg_ai_ajax.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'hmg_get_usage_stats',
-                    nonce: hmg_ai_ajax.nonce
-                },
-                success: function(response) {
-                    if (response.success) {
-                        HMGAIAdmin.updateUsageDisplay(response.data);
-                    }
-                },
-                error: function() {
-                    console.log('Failed to load usage statistics');
-                }
-            });
-        },
-
-        /**
-         * Update usage display
-         */
-        updateUsageDisplay: function(data) {
-            // Update API calls usage
-            const apiCallsPercent = (data.api_calls_used / data.api_calls_limit) * 100;
-            $('.hmg-ai-usage-fill.api-calls').css('width', apiCallsPercent + '%');
-            $('.hmg-ai-usage-stats .api-calls-used').text(data.api_calls_used);
-            $('.hmg-ai-usage-stats .api-calls-limit').text(data.api_calls_limit);
-            
-            // Update tokens usage
-            const tokensPercent = (data.tokens_used / data.tokens_limit) * 100;
-            $('.hmg-ai-usage-fill.tokens').css('width', tokensPercent + '%');
-            $('.hmg-ai-usage-stats .tokens-used').text(data.tokens_used);
-            $('.hmg-ai-usage-stats .tokens-limit').text(data.tokens_limit);
-            
-            // Update reset date
-            $('.hmg-ai-reset-date').text(data.reset_date);
-        },
-
-        /**
-         * Update usage meters
-         */
-        updateUsageMeters: function() {
-            $('.hmg-ai-usage-fill').each(function() {
-                const $fill = $(this);
-                const width = $fill.data('width') || 0;
-                $fill.css('width', width + '%');
-            });
-        },
-
-        /**
-         * Get post content from editor
-         */
-        getPostContent: function() {
-            // Try to get content from various editors
             let content = '';
-            
-            // Classic editor
-            if (typeof tinyMCE !== 'undefined' && tinyMCE.activeEditor) {
-                content = tinyMCE.activeEditor.getContent();
-            }
-            
-            // Block editor (Gutenberg)
-            if (typeof wp !== 'undefined' && wp.data && wp.data.select('core/editor')) {
-                const editorContent = wp.data.select('core/editor').getEditedPostContent();
-                if (editorContent) {
-                    content = editorContent;
-                }
-            }
-            
-            // Fallback to textarea
-            if (!content) {
-                content = $('#content').val() || $('#post-content').val() || '';
-            }
-            
-            return content.trim();
-        },
-
-        /**
-         * Insert generated content into editor as shortcodes
-         */
-        insertGeneratedContent: function(type, content) {
-            // Generate appropriate shortcode based on content type
-            let shortcode = '';
-            switch(type) {
-                case 'takeaways':
-                    shortcode = '[hmg_ai_takeaways style="default"]';
-                    break;
-                case 'faq':
-                    shortcode = '[hmg_ai_faq style="accordion"]';
-                    break;
-                case 'toc':
-                    shortcode = '[hmg_ai_toc style="numbered"]';
-                    break;
-                case 'audio':
-                    shortcode = '[hmg_ai_audio style="player"]';
-                    break;
-                default:
-                    shortcode = `[hmg_ai_${type}]`;
-            }
-            
-            // Try to insert into various editors
-            
-            // Block editor (Gutenberg)
-            if (typeof wp !== 'undefined' && wp.data && wp.data.select('core/editor')) {
-                const currentContent = wp.data.select('core/editor').getEditedPostContent();
-                const newContent = currentContent + '\n\n' + shortcode + '\n\n';
-                wp.data.dispatch('core/editor').editPost({ content: newContent });
-                return;
-            }
-            
-            // Classic editor
-            if (typeof tinyMCE !== 'undefined' && tinyMCE.activeEditor) {
-                tinyMCE.activeEditor.execCommand('mceInsertContent', false, '\n\n' + shortcode + '\n\n');
-                return;
-            }
-            
-            // Fallback to textarea
-            const $textarea = $('#content, #post-content').first();
-            if ($textarea.length) {
-                const currentContent = $textarea.val();
-                $textarea.val(currentContent + '\n\n' + shortcode + '\n\n');
-            }
-        },
-
-        /**
-         * Set loading state for buttons
-         */
-        setLoadingState: function($element, loading) {
-            if (loading) {
-                $element.addClass('hmg-ai-loading').prop('disabled', true);
-                $element.data('original-text', $element.text());
-                $element.text(hmg_ai_ajax.strings.generating);
+            if (typeof wp !== 'undefined' && wp.data) {
+                content = wp.data.select('core/editor').getEditedPostContent();
             } else {
-                $element.removeClass('hmg-ai-loading').prop('disabled', false);
-                $element.text($element.data('original-text') || $element.text());
+                content = $('#content').val();
             }
+
+            if (!content) {
+                this.showNotice('Please add some content to your post before generating audio.', 'warning');
+                return;
+            }
+
+            this.showNotice('Audio generation is coming soon! This feature will be available in the next update.', 'info');
         },
 
         /**
-         * Show admin notice
+         * Generic content generation handler
          */
-        showNotice: function(type, message) {
-            const $notice = $('<div class="hmg-ai-notice ' + type + '">' + message + '</div>');
-            $('.hmg-ai-notices').prepend($notice);
+        generateContent: function(type, content, postId, $button) {
+            const originalText = $button.html();
+            const loadingText = `<span class="spinner is-active" style="float: none; margin: 0;"></span> Generating...`;
             
-            // Auto-dismiss after 5 seconds
-            setTimeout(function() {
-                $notice.fadeOut(function() {
-                    $notice.remove();
-                });
-            }, 5000);
-        },
+            $button.prop('disabled', true).html(loadingText);
+            this.hideNotices();
 
-        /**
-         * Dismiss notice
-         */
-        dismissNotice: function(e) {
-            e.preventDefault();
-            $(this).closest('.hmg-ai-notice').fadeOut(function() {
-                $(this).remove();
+            $.ajax({
+                url: hmg_ai_ajax.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'hmg_generate_' + type,
+                    nonce: hmg_ai_ajax.nonce,
+                    content: content,
+                    post_id: postId
+                },
+                success: (response) => {
+                    console.log('Generation response:', response);
+                    if (response.success) {
+                        this.showNotice(`${this.capitalizeFirst(type)} generated successfully!`, 'success');
+                        this.updateGeneratedContent(type, response.data, postId);
+                        // Usage data is in response.data.usage
+                        if (response.data && response.data.usage) {
+                            console.log('Found usage data in response:', response.data.usage);
+                            this.updateUsageStats(response.data.usage);
+                        } else {
+                            console.log('No usage data in response');
+                        }
+                    } else {
+                        this.showNotice(response.data || 'Generation failed. Please try again.', 'error');
+                    }
+                },
+                error: (xhr, status, error) => {
+                    console.error('Generation error:', error);
+                    this.showNotice('An error occurred. Please check your connection and try again.', 'error');
+                },
+                complete: () => {
+                    $button.prop('disabled', false).html(originalText);
+                }
             });
         },
 
+        /**
+         * Update the generated content display
+         */
+        updateGeneratedContent: function(type, data, postId) {
+            const $container = $('.hmg-ai-generated-content');
+            
+            if ($container.length === 0) {
+                // Create container if it doesn't exist
+                const html = `
+                    <div class="hmg-ai-generated-content">
+                        <h4>Generated Content</h4>
+                    </div>
+                `;
+                $('.hmg-ai-generation-controls').after(html);
+            }
 
+            // Add or update content item
+            let $item = $(`#${type}-item`);
+            if ($item.length === 0) {
+                const itemHtml = this.createContentItemHTML(type, data, postId);
+                $('.hmg-ai-generated-content').append(itemHtml);
+            } else {
+                // Update existing item
+                $item.find('.hmg-ai-content-preview').html(this.formatPreview(data.content));
+                $item.find('textarea').val(data.content);
+            }
+        },
+
+        /**
+         * Create HTML for a content item
+         */
+        createContentItemHTML: function(type, data, postId) {
+            const typeLabels = {
+                'takeaways': 'Key Takeaways',
+                'faq': 'FAQ',
+                'toc': 'Table of Contents'
+            };
+
+            return `
+                <div class="hmg-ai-content-item" id="${type}-item">
+                    <div class="hmg-ai-content-header">
+                        <strong>${typeLabels[type]}:</strong>
+                        <span class="dashicons dashicons-yes-alt" style="color: var(--hmg-lime-green, #5E9732);"></span>
+                        <div class="hmg-ai-content-actions">
+                            <button type="button" class="button-link hmg-ai-edit-content" data-type="${type}" data-post-id="${postId}">
+                                Edit
+                            </button>
+                            <button type="button" class="button-link hmg-ai-regenerate" data-type="${type}" data-post-id="${postId}">
+                                Regenerate
+                            </button>
+                            <button type="button" class="button-link hmg-ai-insert-shortcode" data-type="${type}">
+                                Insert Shortcode
+                            </button>
+                        </div>
+                    </div>
+                    <div class="hmg-ai-content-preview" id="${type}-preview">
+                        ${this.formatPreview(data.content)}
+                    </div>
+                    <div class="hmg-ai-content-editor" id="${type}-editor" style="display: none;">
+                        <textarea rows="6" style="width: 100%;" id="${type}-content">${data.content}</textarea>
+                        <div class="hmg-ai-editor-actions">
+                            <button type="button" class="button button-primary hmg-ai-save-content" data-type="${type}" data-post-id="${postId}">
+                                Save
+                            </button>
+                            <button type="button" class="button hmg-ai-cancel-edit" data-type="${type}">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        },
+
+        /**
+         * Format content for preview
+         */
+        formatPreview: function(content) {
+            if (typeof content === 'object') {
+                // Handle array or object data
+                if (Array.isArray(content)) {
+                    return content.slice(0, 3).join('<br>') + '...';
+                } else {
+                    return JSON.stringify(content).substring(0, 150) + '...';
+                }
+            }
+            // Handle string content
+            const stripped = content.replace(/<[^>]*>/g, '');
+            return stripped.substring(0, 150) + '...';
+        },
+
+        /**
+         * Edit content inline
+         */
+        editContent: function(e) {
+            e.preventDefault();
+            const type = $(e.currentTarget).data('type');
+            $(`#${type}-preview`).hide();
+            $(`#${type}-editor`).show();
+        },
+
+        /**
+         * Cancel edit
+         */
+        cancelEdit: function(e) {
+            e.preventDefault();
+            const type = $(e.currentTarget).data('type');
+            $(`#${type}-editor`).hide();
+            $(`#${type}-preview`).show();
+        },
+
+        /**
+         * Save edited content
+         */
+        saveContent: function(e) {
+            e.preventDefault();
+            const $button = $(e.currentTarget);
+            const type = $button.data('type');
+            const postId = $button.data('post-id');
+            const content = $(`#${type}-content`).val();
+
+            $button.prop('disabled', true).text('Saving...');
+
+            $.ajax({
+                url: hmg_ai_ajax.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'hmg_save_ai_content',
+                    nonce: hmg_ai_ajax.nonce,
+                    content_type: type,
+                    content: content,
+                    post_id: postId
+                },
+                success: (response) => {
+                    if (response.success) {
+                        this.showNotice('Content saved successfully!', 'success');
+                        $(`#${type}-preview`).html(this.formatPreview(content));
+                        $(`#${type}-editor`).hide();
+                        $(`#${type}-preview`).show();
+                    } else {
+                        this.showNotice('Failed to save content. Please try again.', 'error');
+                    }
+                },
+                error: () => {
+                    this.showNotice('An error occurred while saving. Please try again.', 'error');
+                },
+                complete: () => {
+                    $button.prop('disabled', false).text('Save');
+                }
+            });
+        },
+
+        /**
+         * Regenerate content
+         */
+        regenerateContent: function(e) {
+            e.preventDefault();
+            const type = $(e.currentTarget).data('type');
+            const postId = $(e.currentTarget).data('post-id');
+            
+            if (confirm('Are you sure you want to regenerate this content? The current version will be replaced.')) {
+                $(`.hmg-ai-generate-${type}`).click();
+            }
+        },
+
+        /**
+         * Insert shortcode into editor
+         */
+        insertShortcode: function(e) {
+            e.preventDefault();
+            const type = $(e.currentTarget).data('type');
+            const shortcode = `[hmg_ai_${type}]`;
+            
+            if (typeof wp !== 'undefined' && wp.data) {
+                // Gutenberg editor
+                const currentContent = wp.data.select('core/editor').getEditedPostContent();
+                wp.data.dispatch('core/editor').editPost({
+                    content: currentContent + '\n\n' + shortcode
+                });
+                this.showNotice('Shortcode added to editor!', 'success');
+            } else if (typeof tinymce !== 'undefined' && tinymce.activeEditor) {
+                // Classic editor with TinyMCE
+                tinymce.activeEditor.execCommand('mceInsertContent', false, shortcode);
+                this.showNotice('Shortcode inserted!', 'success');
+            } else {
+                // Fallback: copy to clipboard
+                this.copyToClipboard(shortcode);
+                this.showNotice('Shortcode copied to clipboard!', 'success');
+            }
+        },
+
+        /**
+         * Copy text to clipboard
+         */
+        copyToClipboard: function(text) {
+            const $temp = $('<input>');
+            $('body').append($temp);
+            $temp.val(text).select();
+            document.execCommand('copy');
+            $temp.remove();
+        },
 
         /**
          * Test AI providers
          */
-        testAIProviders: function(e) {
+        testProviders: function(e) {
             e.preventDefault();
+            const $button = $(e.currentTarget);
+            const originalText = $button.text();
             
-            const $button = $(this);
-            
-            // Check if we have the necessary variables
-            if (typeof hmg_ai_ajax === 'undefined') {
-                alert('Error: Plugin JavaScript not properly loaded. Please refresh the page.');
-                return;
-            }
-            
-            HMGAIAdmin.setLoadingState($button, true);
+            $button.prop('disabled', true).text('Testing...');
             
             $.ajax({
                 url: hmg_ai_ajax.ajax_url,
@@ -498,171 +445,192 @@
                     action: 'hmg_test_ai_providers',
                     nonce: hmg_ai_ajax.nonce
                 },
-                success: function(response) {
-                    console.log('Provider test response:', response);
-                    
+                success: (response) => {
                     if (response.success) {
                         let message = 'Provider Test Results:\n\n';
-                        
-                        if (response.data && response.data.providers) {
-                            Object.keys(response.data.providers).forEach(function(providerKey) {
-                                const provider = response.data.providers[providerKey];
-                                const status = provider.success ? '✅ Success' : '❌ Failed';
-                                message += `${provider.name}: ${status}\n`;
-                                if (!provider.success) {
-                                    message += `  Error: ${provider.message}\n`;
-                                }
-                                message += '\n';
-                            });
-                        } else {
-                            message = 'No provider data received.';
+                        for (let provider in response.data) {
+                            const result = response.data[provider];
+                            message += `${result.name}: ${result.success ? '✅ Connected' : '❌ Failed'}\n`;
+                            if (result.message) {
+                                message += `  ${result.message}\n`;
+                            }
                         }
-                        
-                        HMGAIAdmin.showNotice('success', 'Provider tests completed.');
-                        console.log(message);
                         alert(message);
                     } else {
-                        const errorMsg = response.data ? response.data.message : 'Unknown error occurred';
-                        HMGAIAdmin.showNotice('error', 'Failed to test providers: ' + errorMsg);
-                        console.error('Provider test error:', response);
+                        alert('Test failed: ' + response.data);
                     }
                 },
-                error: function(xhr, status, error) {
-                    console.error('AJAX error:', xhr, status, error);
-                    HMGAIAdmin.showNotice('error', 'Failed to test providers. Check browser console for details.');
-                    alert('AJAX Error: ' + error + '\nStatus: ' + status + '\nPlease check browser console for more details.');
+                error: () => {
+                    alert('Failed to test providers. Please check your connection.');
                 },
-                complete: function() {
-                    HMGAIAdmin.setLoadingState($button, false);
+                complete: () => {
+                    $button.prop('disabled', false).text(originalText);
                 }
             });
         },
 
         /**
-         * Toggle custom spending limit section
+         * Refresh usage stats from server
          */
-        toggleCustomLimit: function() {
-            const selectedValue = $('input[name="spending_limit_type"]:checked').val();
-            const $customSection = $('#custom-limit-section');
-            
-            if (selectedValue === 'custom') {
-                $customSection.slideDown();
-            } else {
-                $customSection.slideUp();
-            }
-        },
-
-        /**
-         * Update usage stats after generation
-         */
-        updateUsageStats: function() {
-            // Reload usage stats after a short delay
-            setTimeout(function() {
-                HMGAIAdmin.loadUsageStats();
-            }, 1000);
-        },
-
-        /**
-         * Edit content functionality
-         */
-        editContent: function(e) {
-            e.preventDefault();
-            const $button = $(this);
-            const type = $button.data('type');
-            
-            // Hide preview and show editor
-            $(`#${type}-preview`).hide();
-            $(`#${type}-editor`).show();
-            
-            // Focus on textarea
-            $(`#${type}-content`).focus();
-        },
-
-        /**
-         * Save edited content
-         */
-        saveContent: function(e) {
-            e.preventDefault();
-            const $button = $(this);
-            const type = $button.data('type');
-            const postId = $button.data('post-id');
-            const content = $(`#${type}-content`).val();
-            
-            if (!content.trim()) {
-                HMGAIAdmin.showNotice('error', 'Content cannot be empty.');
-                return;
-            }
-            
-            HMGAIAdmin.setLoadingState($button, true);
-            
-            // Save via AJAX
+        refreshUsageStats: function() {
             $.ajax({
                 url: hmg_ai_ajax.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'hmg_save_ai_content',
-                    nonce: hmg_ai_ajax.nonce,
-                    post_id: postId,
-                    content_type: type,
-                    content: content
+                    action: 'hmg_get_usage_stats',
+                    nonce: hmg_ai_ajax.nonce
                 },
-                success: function(response) {
-                    if (response.success) {
-                        // Update preview
-                        const previewText = content.length > 150 ? content.substring(0, 150) + '...' : content;
-                        $(`#${type}-preview`).html(previewText);
-                        
-                        // Hide editor and show preview
-                        $(`#${type}-editor`).hide();
-                        $(`#${type}-preview`).show();
-                        
-                        HMGAIAdmin.showNotice('success', 'Content saved successfully!');
-                    } else {
-                        HMGAIAdmin.showNotice('error', response.data.message || 'Failed to save content.');
+                success: (response) => {
+                    if (response.success && response.data) {
+                        this.updateUsageStats(response.data);
                     }
-                },
-                error: function() {
-                    HMGAIAdmin.showNotice('error', 'Failed to save content.');
-                },
-                complete: function() {
-                    HMGAIAdmin.setLoadingState($button, false);
                 }
             });
         },
 
         /**
-         * Cancel content editing
+         * Update usage statistics display
          */
-        cancelEdit: function(e) {
-            e.preventDefault();
-            const $button = $(this);
-            const type = $button.data('type');
+        updateUsageStats: function(usage) {
+            if (!usage) {
+                console.log('No usage data provided to updateUsageStats');
+                return;
+            }
             
-            // Hide editor and show preview
-            $(`#${type}-editor`).hide();
-            $(`#${type}-preview`).show();
+            console.log('Updating usage stats:', usage);
+
+            if (usage.spending) {
+                // Format spending with appropriate decimal places
+                const formatSpending = (amount) => {
+                    if (amount < 0.01) {
+                        return '$' + amount.toFixed(4); // Show 4 decimals for very small amounts
+                    } else if (amount < 1) {
+                        return '$' + amount.toFixed(3); // Show 3 decimals for small amounts
+                    } else {
+                        return '$' + amount.toFixed(2); // Show 2 decimals for regular amounts
+                    }
+                };
+                
+                // Update spending display
+                $('.spending-used').text(formatSpending(usage.spending.used));
+                $('.spending-limit').text(formatSpending(usage.spending.limit));
+                $('.spending-percentage').text('(' + usage.spending.percentage.toFixed(1) + '%)');
+                
+                // Update spending bar with animation
+                $('.hmg-ai-usage-fill.spending').each(function() {
+                    $(this).attr('data-width', Math.min(100, usage.spending.percentage));
+                    $(this).css('width', Math.min(100, usage.spending.percentage) + '%');
+                });
+                
+                // Also update in the usage section
+                $('.hmg-ai-usage-stats .spending-used').text(formatSpending(usage.spending.used));
+                $('.hmg-ai-usage-stats .spending-limit').text(formatSpending(usage.spending.limit));
+                $('.hmg-ai-usage-stats .spending-percentage').text('(' + usage.spending.percentage.toFixed(1) + '%)');
+            }
+
+            if (usage.api_calls !== undefined) {
+                // Update API calls display
+                $('.api-calls-used').text(usage.api_calls.toLocaleString());
+                
+                // Calculate percentage (using a reasonable scale)
+                const percentage = Math.min(100, (usage.api_calls / Math.max(usage.api_calls + 100, 1000)) * 100);
+                
+                // Update API calls bar
+                $('.hmg-ai-usage-fill.api-calls').each(function() {
+                    $(this).attr('data-width', percentage);
+                    $(this).css('width', percentage + '%');
+                });
+                
+                // Update in usage section
+                $('.hmg-ai-usage-stats .api-calls-used').text(usage.api_calls.toLocaleString());
+            }
+
+            if (usage.tokens !== undefined) {
+                // Update tokens display
+                $('.tokens-used').text(usage.tokens.toLocaleString());
+                
+                // Calculate percentage
+                const percentage = Math.min(100, (usage.tokens / Math.max(usage.tokens * 10, 1000000)) * 100);
+                
+                // Update tokens bar
+                $('.hmg-ai-usage-fill.tokens').each(function() {
+                    $(this).attr('data-width', percentage);
+                    $(this).css('width', percentage + '%');
+                });
+                
+                // Update in usage section
+                $('.hmg-ai-usage-stats .tokens-used').text(usage.tokens.toLocaleString());
+            }
+
+            if (usage.reset_date) {
+                // Update reset date
+                $('.hmg-ai-reset-date').text(usage.reset_date);
+            }
         },
 
         /**
-         * Insert shortcode into editor
+         * Toggle custom spending limit field
          */
-        insertShortcode: function(e) {
-            e.preventDefault();
-            const $button = $(this);
-            const type = $button.data('type');
+        toggleCustomLimit: function() {
+            const isCustom = $('input[name="spending_limit_type"]:checked').val() === 'custom';
+            $('#custom-limit-section').toggle(isCustom);
+        },
+
+        /**
+         * Show notice message
+         */
+        showNotice: function(message, type = 'info') {
+            const $notices = $('.hmg-ai-notices');
+            const noticeClass = type === 'error' ? 'notice-error' : 
+                               type === 'success' ? 'notice-success' : 
+                               type === 'warning' ? 'notice-warning' : 'notice-info';
             
-            // Insert shortcode using existing function
-            HMGAIAdmin.insertGeneratedContent(type, '');
+            const html = `
+                <div class="notice ${noticeClass} is-dismissible">
+                    <p>${message}</p>
+                    <button type="button" class="notice-dismiss">
+                        <span class="screen-reader-text">Dismiss this notice.</span>
+                    </button>
+                </div>
+            `;
             
-            HMGAIAdmin.showNotice('success', `${type.charAt(0).toUpperCase() + type.slice(1)} shortcode inserted!`);
+            $notices.html(html);
+            
+            // Auto-dismiss after 5 seconds for success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    $notices.find('.notice').fadeOut(() => {
+                        $notices.empty();
+                    });
+                }, 5000);
+            }
+            
+            // Handle dismiss button
+            $notices.find('.notice-dismiss').on('click', function() {
+                $(this).parent().fadeOut(() => {
+                    $(this).remove();
+                });
+            });
+        },
+
+        /**
+         * Hide all notices
+         */
+        hideNotices: function() {
+            $('.hmg-ai-notices').empty();
+        },
+
+        /**
+         * Capitalize first letter
+         */
+        capitalizeFirst: function(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
         }
     };
 
-    /**
-     * Initialize when document is ready
-     */
+    // Initialize when document is ready
     $(document).ready(function() {
         HMGAIAdmin.init();
     });
 
-})(jQuery); 
+})(jQuery);

@@ -302,14 +302,19 @@ Please provide a clear, professional summary without HTML formatting.'
             // Cache the result
             $this->cache_content($cache_key, $result['content']);
             
+            // Debug logging
+            error_log('HMG AI Gemini: Calling record_usage for ' . $content_type . ' with ' . ($result['tokens_used'] ?? 0) . ' tokens');
+            
             // Record usage
-            $this->auth_service->record_usage(
+            $record_result = $this->auth_service->record_usage(
                 $post_id,
                 $content_type,
                 1, // API calls
                 $result['tokens_used'] ?? 0,
                 'gemini' // Provider name for cost tracking
             );
+            
+            error_log('HMG AI Gemini: record_usage returned: ' . ($record_result ? 'success' : 'failure'));
             
             return array(
                 'success' => true,
@@ -420,9 +425,24 @@ Please provide a clear, professional summary without HTML formatting.'
         }
 
         $generated_content = $data['candidates'][0]['content']['parts'][0]['text'];
-        $tokens_used = isset($data['usageMetadata']['totalTokenCount']) 
-            ? $data['usageMetadata']['totalTokenCount'] 
-            : 0;
+        
+        // Extract token usage with multiple fallbacks
+        $tokens_used = 0;
+        if (isset($data['usageMetadata']['totalTokenCount'])) {
+            $tokens_used = $data['usageMetadata']['totalTokenCount'];
+        } elseif (isset($data['usageMetadata']['promptTokenCount']) && isset($data['usageMetadata']['candidatesTokenCount'])) {
+            $tokens_used = $data['usageMetadata']['promptTokenCount'] + $data['usageMetadata']['candidatesTokenCount'];
+        }
+        
+        // If still no tokens, estimate based on content length
+        if ($tokens_used === 0) {
+            // Rough estimate: 1 token ≈ 4 characters
+            $total_chars = strlen($content) + strlen($generated_content);
+            $tokens_used = ceil($total_chars / 4);
+            error_log('HMG AI Gemini: No token count from API, estimated ' . $tokens_used . ' tokens');
+        } else {
+            error_log('HMG AI Gemini: API returned ' . $tokens_used . ' tokens');
+        }
 
         return array(
             'success' => true,

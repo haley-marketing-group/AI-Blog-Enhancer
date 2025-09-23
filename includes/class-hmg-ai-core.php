@@ -211,14 +211,11 @@ class HMG_AI_Core {
         // Register shortcodes
         $this->loader->add_action('init', $plugin_public, 'register_shortcodes');
 
-        // Content filters for automatic insertion (DISABLED - using shortcodes instead)
-        // $this->loader->add_filter('the_content', $plugin_public, 'maybe_add_ai_content', 20);
+        // Add heading IDs for TOC navigation
+        $this->loader->add_filter('the_content', $plugin_public, 'add_heading_ids', 5);
 
-        // REST API endpoints for frontend interactions
-        $this->loader->add_action('rest_api_init', $plugin_public, 'register_rest_routes');
-
-        // Custom post content hooks
-        $this->loader->add_action('wp_head', $plugin_public, 'add_structured_data');
+        // Add structured data for FAQ
+        $this->loader->add_action('wp_head', $plugin_public, 'add_faq_structured_data');
     }
 
     /**

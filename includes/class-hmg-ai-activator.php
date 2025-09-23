@@ -121,13 +121,16 @@ class HMG_AI_Activator {
             user_id bigint(20) NOT NULL,
             post_id bigint(20) NOT NULL,
             feature_type varchar(50) NOT NULL,
+            provider varchar(50) DEFAULT 'unknown',
             api_calls_used int(11) DEFAULT 0,
             tokens_used int(11) DEFAULT 0,
+            estimated_cost decimal(10,4) DEFAULT 0.0000,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY user_id (user_id),
             KEY post_id (post_id),
             KEY feature_type (feature_type),
+            KEY provider (provider),
             KEY created_at (created_at)
         ) $charset_collate;";
 

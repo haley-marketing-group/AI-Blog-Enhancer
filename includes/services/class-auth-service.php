@@ -116,10 +116,14 @@ class HMG_AI_Auth_Service {
      * @since    1.0.0
      */
     private function update_provider_costs() {
-        // Model cost mappings
+        // Model cost mappings (cost per 1000 tokens)
         $model_costs = array(
-            // Gemini models
-            'gemini-1.5-flash' => 0.00075,
+            // Gemini models - Updated 2025 pricing
+            'gemini-2.5-flash' => 0.00075,  // $0.75 per 1M tokens
+            'gemini-2.5-pro' => 0.00125,    // $1.25 per 1M tokens
+            'gemini-2.5-flash-lite' => 0.0001, // $0.10 per 1M tokens
+            'gemini-2.0-flash' => 0.0001,   // $0.10 per 1M tokens
+            'gemini-1.5-flash' => 0.000075, // $0.075 per 1M tokens
             'gemini-1.5-pro' => 0.0035,
             'gemini-1.0-pro' => 0.0005,
             
@@ -137,13 +141,83 @@ class HMG_AI_Auth_Service {
         );
         
         // Update costs based on selected models
-        $selected_gemini_model = $this->options['gemini_model'] ?? 'gemini-1.5-flash';
+        $selected_gemini_model = $this->options['gemini_model'] ?? 'gemini-2.5-flash';
         $selected_openai_model = $this->options['openai_model'] ?? 'gpt-3.5-turbo';
         $selected_claude_model = $this->options['claude_model'] ?? 'claude-3-haiku-20240307';
         
         $this->provider_costs['gemini'] = $model_costs[$selected_gemini_model] ?? 0.00075;
         $this->provider_costs['openai'] = $model_costs[$selected_openai_model] ?? 0.0015;
         $this->provider_costs['claude'] = $model_costs[$selected_claude_model] ?? 0.00025;
+    }
+
+    /**
+     * Ensure database tables exist
+     *
+     * @since    1.0.0
+     */
+    private function ensure_tables_exist() {
+        // Only check/create tables on admin pages, not during AJAX requests
+        if (defined('DOING_AJAX') && DOING_AJAX) {
+            return;
+        }
+        
+        // Also skip during cron or CLI
+        if (defined('DOING_CRON') || defined('WP_CLI')) {
+            return;
+        }
+        
+        global $wpdb;
+        
+        $usage_table = $wpdb->prefix . 'hmg_ai_usage';
+        
+        // Check if table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$usage_table'");
+        
+        if (!$table_exists) {
+            // Create tables if they don't exist
+            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+            $charset_collate = $wpdb->get_charset_collate();
+            
+            $sql = "CREATE TABLE IF NOT EXISTS $usage_table (
+                id mediumint(9) NOT NULL AUTO_INCREMENT,
+                user_id bigint(20) NOT NULL,
+                post_id bigint(20) NOT NULL,
+                feature_type varchar(50) NOT NULL,
+                provider varchar(50) DEFAULT 'unknown',
+                api_calls_used int(11) DEFAULT 0,
+                tokens_used int(11) DEFAULT 0,
+                estimated_cost decimal(10,4) DEFAULT 0.0000,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY user_id (user_id),
+                KEY post_id (post_id),
+                KEY feature_type (feature_type),
+                KEY provider (provider),
+                KEY created_at (created_at)
+            ) $charset_collate;";
+            
+            dbDelta($sql);
+            
+            // Also create cache table
+            $cache_table = $wpdb->prefix . 'hmg_ai_content_cache';
+            $cache_exists = $wpdb->get_var("SHOW TABLES LIKE '$cache_table'");
+            
+            if (!$cache_exists) {
+                $cache_sql = "CREATE TABLE IF NOT EXISTS $cache_table (
+                    id mediumint(9) NOT NULL AUTO_INCREMENT,
+                    content_hash varchar(64) NOT NULL,
+                    feature_type varchar(50) NOT NULL,
+                    generated_content longtext NOT NULL,
+                    expires_at datetime NOT NULL,
+                    created_at datetime DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id),
+                    UNIQUE KEY content_hash (content_hash, feature_type),
+                    KEY expires_at (expires_at)
+                ) $charset_collate;";
+                
+                dbDelta($cache_sql);
+            }
+        }
     }
 
     /**
@@ -273,6 +347,8 @@ class HMG_AI_Auth_Service {
         );
         
         $monthly_data = $wpdb->get_row($monthly_query, ARRAY_A);
+        
+        error_log('HMG AI Monthly Data: ' . json_encode($monthly_data));
         
         // Daily spending
         $daily_query = $wpdb->prepare(
@@ -411,15 +487,34 @@ class HMG_AI_Auth_Service {
     public function record_usage($post_id, $feature_type, $api_calls = 1, $tokens = 0, $provider = 'unknown') {
         global $wpdb;
         
+        // Debug logging
+        error_log('HMG AI: Recording usage - Feature: ' . $feature_type . ', Tokens: ' . $tokens . ', Provider: ' . $provider);
+        
+        // Get current user ID
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            $user_id = 1; // Default to admin user if not logged in
+        }
+        
         // Calculate estimated cost
         $cost_per_1k_tokens = $this->provider_costs[$provider] ?? 0.001; // Default fallback
         $estimated_cost = ($tokens / 1000) * $cost_per_1k_tokens;
         
+        error_log('HMG AI Cost Calculation: Provider=' . $provider . ', Tokens=' . $tokens . ', Cost/1K=' . $cost_per_1k_tokens . ', Total Cost=' . $estimated_cost);
+        
         $usage_table = $wpdb->prefix . 'hmg_ai_usage';
+        
+        // Check if table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$usage_table'");
+        if (!$table_exists) {
+            error_log('HMG AI Error: Usage table does not exist: ' . $usage_table);
+            return false;
+        }
         
         $result = $wpdb->insert(
             $usage_table,
             array(
+                'user_id' => $user_id,
                 'post_id' => $post_id,
                 'feature_type' => $feature_type,
                 'provider' => $provider,
@@ -428,8 +523,14 @@ class HMG_AI_Auth_Service {
                 'estimated_cost' => $estimated_cost,
                 'created_at' => current_time('mysql')
             ),
-            array('%d', '%s', '%s', '%d', '%d', '%f', '%s')
+            array('%d', '%d', '%s', '%s', '%d', '%d', '%f', '%s')
         );
+        
+        if ($result === false) {
+            error_log('HMG AI Usage Recording Error: ' . $wpdb->last_error);
+        } else {
+            error_log('HMG AI: Usage recorded successfully - ID: ' . $wpdb->insert_id);
+        }
         
         return $result !== false;
     }
