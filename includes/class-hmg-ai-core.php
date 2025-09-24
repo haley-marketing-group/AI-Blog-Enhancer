@@ -186,6 +186,7 @@ class HMG_AI_Core {
         $this->loader->add_action('wp_ajax_hmg_get_usage_stats', $plugin_admin, 'ajax_get_usage_stats');
         $this->loader->add_action('wp_ajax_hmg_test_ai_providers', $plugin_admin, 'ajax_test_ai_providers');
         $this->loader->add_action('wp_ajax_hmg_save_ai_content', $plugin_admin, 'ajax_save_ai_content');
+        $this->loader->add_action('wp_ajax_hmg_delete_content', $plugin_admin, 'ajax_delete_content');
 
         // Plugin action links
         $this->loader->add_filter('plugin_action_links_' . HMG_AI_BLOG_ENHANCER_PLUGIN_BASENAME, $plugin_admin, 'add_action_links');

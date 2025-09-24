@@ -37,6 +37,10 @@
     margin-bottom: 0;
 }
 
+#wpbody-content > div.hmg-ai-admin-wrap > div.hmg-ai-header > h1 {
+    color: white;
+}
+
 .hmg-ai-header h1 {
     margin: 0 0 10px 0;
     font-size: 28px;
@@ -180,10 +184,6 @@
     padding: 0;
 }
 
-.hmg-ai-meta-box {
-    padding: 20px;
-}
-
 .hmg-ai-meta-box h4 {
     color: var(--hmg-royal-blue);
     margin-top: 0;
@@ -198,7 +198,6 @@
 }
 
 .hmg-ai-generation-controls .hmg-ai-button {
-    width: 100%;
     justify-content: center;
     text-align: center;
 }
@@ -409,4 +408,673 @@
     border-radius: 4px;
     padding: 15px;
     margin-bottom: 20px;
+}
+
+/* === GENERATED CONTENT SIDEBAR OPTIMIZED === */
+.hmg-ai-generated-content {
+    margin-top: 15px;
+}
+
+
+
+.hmg-ai-content-item {
+    background: var(--hmg-light-gray);
+    border-radius: var(--hmg-border-radius);
+    padding: 10px;
+    margin-bottom: 12px;
+}
+
+.hmg-ai-content-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-right: 10px;
+    padding-left: 10px;
+}
+
+.hmg-ai-content-header strong {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.hmg-ai-content-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: space-evenly;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.hmg-ai-content-actions .button-link {
+    padding: 5px;
+    margin: 0;
+    opacity: 0.6;
+    transition: all 0.2s ease;
+    text-decoration: none !important;
+    box-shadow: none !important;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+}
+
+.hmg-ai-content-actions .button-link:hover {
+    opacity: 1;
+    text-decoration: none !important;
+    box-shadow: none !important;
+    background: rgba(0, 0, 0, 0.05);
+    transform: scale(1.05);
+}
+
+.hmg-ai-content-actions .button-link:focus {
+    text-decoration: none !important;
+    box-shadow: none !important;
+    outline: 2px solid #135e96;
+    outline-offset: 2px;
+}
+
+.hmg-ai-content-actions .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+}
+
+/* Ensure no underlines on any action button state */
+.hmg-ai-edit-content,
+.hmg-ai-save-content,
+.hmg-ai-cancel-edit,
+.hmg-ai-regenerate,
+.hmg-ai-insert-shortcode,
+.hmg-ai-delete-content {
+    text-decoration: none !important;
+}
+
+.hmg-ai-edit-content:hover,
+.hmg-ai-save-content:hover,
+.hmg-ai-cancel-edit:hover,
+.hmg-ai-regenerate:hover,
+.hmg-ai-insert-shortcode:hover,
+.hmg-ai-delete-content:hover,
+.hmg-ai-edit-content:focus,
+.hmg-ai-save-content:focus,
+.hmg-ai-cancel-edit:focus,
+.hmg-ai-regenerate:focus,
+.hmg-ai-insert-shortcode:focus,
+.hmg-ai-delete-content:focus {
+    text-decoration: none !important;
+}
+
+/* Color coding for different actions */
+.hmg-ai-edit-content .dashicons {
+    color: #2271b1;
+}
+
+.hmg-ai-save-content .dashicons {
+    color: #00a32a;
+}
+
+.hmg-ai-cancel-edit .dashicons {
+    color: #757575;
+}
+
+.hmg-ai-regenerate .dashicons {
+    color: #f0b849;
+}
+
+.hmg-ai-insert-shortcode .dashicons {
+    color: #8c5cf2;
+}
+
+.hmg-ai-delete-content .dashicons {
+    color: #d63638;
+}
+
+/* Hover effects with color enhancement */
+.hmg-ai-edit-content:hover .dashicons {
+    color: #135e96;
+}
+
+.hmg-ai-save-content:hover .dashicons {
+    color: #007017;
+}
+
+.hmg-ai-regenerate:hover .dashicons {
+    color: #dba617;
+}
+
+.hmg-ai-insert-shortcode:hover .dashicons {
+    color: #6b3acf;
+}
+
+.hmg-ai-delete-content:hover .dashicons {
+    color: #b32d2e;
+}
+
+/* Tooltips for action buttons */
+.hmg-ai-content-actions .button-link {
+    position: relative;
+}
+
+.hmg-ai-content-actions .button-link::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #23282d;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    margin-bottom: 5px;
+}
+
+.hmg-ai-content-actions .button-link:hover::after {
+    opacity: 0.9;
+}
+
+/* Adjust action icons for narrow sidebars */
+@media (max-width: 400px) {
+    .hmg-ai-content-actions {
+        gap: 6px;
+    }
+    
+    .hmg-ai-content-actions .dashicons {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        line-height: 16px;
+    }
+    
+    .hmg-ai-content-actions .button-link {
+        padding: 4px;
+    }
+}
+
+.hmg-ai-content-preview {
+    color: var(--hmg-dark-gray);
+    font-size: 11px;
+    line-height: 1.4;
+    max-height: 45px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hmg-ai-content-editor {
+    margin-top: 10px;
+}
+
+.hmg-ai-content-editor textarea {
+    font-size: 12px;
+}
+
+/* Inline notice for generated content items */
+.hmg-ai-content-notice {
+    margin-top: 8px;
+}
+
+.hmg-ai-inline-notice {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    border-radius: 3px;
+    font-size: 11px;
+    animation: fadeIn 0.3s ease;
+}
+
+.hmg-ai-inline-notice.notice-success {
+    background-color: #d4f4dd;
+    color: #1e7e34;
+}
+
+.hmg-ai-inline-notice.notice-error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.hmg-ai-inline-notice.notice-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.hmg-ai-inline-notice.notice-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.hmg-ai-inline-notice .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* === AUDIO SETTINGS === */
+.hmg-ai-audio-settings {
+    margin-top: 12px;
+    padding: 10px;
+    background: var(--hmg-light-gray);
+    border-radius: var(--hmg-border-radius-sm);
+}
+
+.hmg-ai-audio-settings .hmg-ai-form-group {
+    margin-bottom: 8px;
+}
+
+.hmg-ai-audio-settings .hmg-ai-form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--hmg-dark-gray);
+}
+
+.hmg-ai-select {
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+    background: white;
+    cursor: pointer;
+    transition: var(--hmg-transition-fast);
+}
+
+.hmg-ai-select:hover {
+    border-color: var(--hmg-royal-blue);
+}
+
+.hmg-ai-select:focus {
+    outline: none;
+    border-color: var(--hmg-royal-blue);
+    box-shadow: 0 0 0 3px rgba(51, 42, 134, 0.1);
+}
+
+/* Compact select for sidebar */
+.hmg-ai-select.hmg-ai-compact {
+    padding: 4px 8px;
+    font-size: 13px;
+    height: 30px;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Prevent overflow in sidebar */
+.hmg-ai-audio-settings .hmg-ai-select {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Audio Player Wrapper */
+.hmg-ai-audio-player-wrapper {
+    margin: 15px 0;
+}
+
+.hmg-ai-audio-player {
+    width: 100%;
+    height: 40px;
+    margin-bottom: 10px;
+}
+
+.hmg-ai-audio-info {
+    display: flex;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--hmg-medium-gray);
+    margin-top: 6px;
+}
+
+.hmg-ai-audio-info span {
+    display: inline-flex;
+    align-items: center;
+}
+
+.hmg-ai-audio-info .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+}
+
+.hmg-ai-separator {
+    opacity: 0.5;
+}
+
+/* Spinning animation for loading */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.dashicons.spinning {
+    animation: spin 1s linear infinite;
+}
+
+/* Responsive adjustments for sidebar */
+@media (max-width: 782px) {
+    .hmg-ai-meta-box {
+        padding: 10px;
+    }
+    
+    .hmg-ai-button {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+    
+    .hmg-ai-content-preview {
+        font-size: 11px;
+    }
+    
+    .hmg-ai-audio-settings .hmg-ai-select {
+        width: 100%;
+        max-width: 100% !important;
+    }
+}
+
+/* ==========================================================================
+   Custom Modal
+   ========================================================================== */
+
+.hmg-ai-modal {
+    display: none;
+    position: fixed;
+    z-index: 100000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.hmg-ai-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.2s ease-out;
+}
+
+.hmg-ai-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.3s ease-out;
+}
+
+.hmg-ai-modal.show .hmg-ai-modal-content {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -45%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+@keyframes successPulse {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Modal icon alignment */
+.hmg-ai-modal .dashicons {
+    vertical-align: middle;
+    margin-right: 5px;
+}
+
+/* Success icon animation */
+.hmg-ai-modal .dashicons-yes-alt {
+    animation: successPulse 0.5s ease-out;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Success modal specific styling */
+.hmg-ai-modal-success .hmg-ai-modal-header {
+    background: linear-gradient(135deg, #00a32a 0%, #00d34d 100%);
+    color: white;
+    border-bottom: none;
+}
+
+.hmg-ai-modal-success .hmg-ai-modal-title {
+    color: white;
+}
+
+.hmg-ai-modal-success .hmg-ai-modal-close {
+    color: white;
+    opacity: 0.9;
+}
+
+.hmg-ai-modal-success .hmg-ai-modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.hmg-ai-modal-success .hmg-ai-modal-footer {
+    background: #f0f8f0;
+}
+
+.hmg-ai-modal-success .button-primary {
+    background: #00a32a !important;
+    border-color: #00a32a !important;
+}
+
+.hmg-ai-modal-success .button-primary:hover {
+    background: #00d34d !important;
+    border-color: #00d34d !important;
+}
+
+/* Error modal specific styling */
+.hmg-ai-modal-error .hmg-ai-modal-header {
+    background: linear-gradient(135deg, #d63638 0%, #ff6b6b 100%);
+    color: white;
+    border-bottom: none;
+}
+
+.hmg-ai-modal-error .hmg-ai-modal-title {
+    color: white;
+}
+
+.hmg-ai-modal-error .hmg-ai-modal-close {
+    color: white;
+    opacity: 0.9;
+}
+
+.hmg-ai-modal-error .hmg-ai-modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.hmg-ai-modal-error .hmg-ai-modal-footer {
+    background: #fff5f5;
+}
+
+/* Error icon shake animation */
+@keyframes errorShake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-2px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(2px);
+    }
+}
+
+.hmg-ai-modal .dashicons-warning {
+    animation: errorShake 0.5s ease-out;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.hmg-ai-modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e5e5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hmg-ai-modal-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #23282d;
+}
+
+.hmg-ai-modal-close {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.hmg-ai-modal-close:hover {
+    background: #f0f0f1;
+    color: #135e96;
+}
+
+.hmg-ai-modal-body {
+    padding: 24px;
+    color: #50575e;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.hmg-ai-modal-body p {
+    margin: 0 0 12px;
+}
+
+.hmg-ai-modal-body p:last-child {
+    margin-bottom: 0;
+}
+
+.hmg-ai-modal-body strong {
+    color: #d63638;
+}
+
+.hmg-ai-modal-footer {
+    padding: 16px 24px;
+    background: #f9f9f9;
+    border-top: 1px solid #e5e5e5;
+    border-radius: 0 0 8px 8px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.hmg-ai-modal-footer .button {
+    margin: 0;
+}
+
+.button-danger {
+    background: #d63638 !important;
+    border-color: #d63638 !important;
+    color: #fff !important;
+}
+
+.button-danger:hover {
+    background: #b32d2e !important;
+    border-color: #b32d2e !important;
+}
+
+/* ==========================================================================
+   Spinning Animation for Icons
+   ========================================================================== */
+
+@keyframes hmgAiSpin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.hmg-ai-spinning {
+    animation: hmgAiSpin 1s linear infinite;
+    display: inline-block;
+}
+
+/* Ensure button stays in place when icon spins */
+.hmg-ai-regenerate:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Mobile-responsive modal */
+@media (max-width: 600px) {
+    .hmg-ai-modal-content {
+        width: 95%;
+        max-width: none;
+    }
+    
+    .hmg-ai-modal-header {
+        padding: 16px 20px;
+    }
+    
+    .hmg-ai-modal-body {
+        padding: 20px;
+    }
 } 

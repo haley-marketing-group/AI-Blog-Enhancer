@@ -1,0 +1,410 @@
+/**
+ * Simple, Clean CSS
+ * Minimal styling that integrates seamlessly with any theme
+ * Focus on readability and accessibility
+ */
+
+/* === CSS CUSTOM PROPERTIES === */
+:root {
+    /* Minimal Spacing */
+    --spacing-xs: 0.5rem;   
+    --spacing-sm: 1rem;     
+    --spacing-md: 1.5rem;   
+    --spacing-lg: 2rem;     
+    
+    /* Simple Typography */
+    --text-sm: 0.875rem;    
+    --text-base: 1rem;      
+    --text-lg: 1.125rem;    
+    
+    /* Minimal Colors - NO BACKGROUNDS */
+    --color-border: rgba(0, 0, 0, 0.1);
+    --color-surface: transparent;
+    
+    /* Simple Transitions */
+    --transition-fast: 150ms ease;
+}
+
+/* === RESET AND BASE === */
+.hmg-ai-takeaways *,
+.hmg-ai-faq *,
+.hmg-ai-toc * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* === OVERRIDE ALL FANCY STYLES === */
+.hmg-ai-takeaways,
+.hmg-ai-takeaways.hmg-ai-takeaways-default,
+.hmg-ai-takeaways.hmg-ai-takeaways-cards,
+.hmg-ai-takeaways.hmg-ai-takeaways-numbered,
+.hmg-ai-takeaways.hmg-ai-takeaways-highlights,
+.hmg-ai-faq,
+.hmg-ai-faq.hmg-ai-faq-accordion,
+.hmg-ai-faq.hmg-ai-faq-list,
+.hmg-ai-faq.hmg-ai-faq-cards,
+.hmg-ai-toc,
+.hmg-ai-toc.hmg-ai-toc-numbered,
+.hmg-ai-toc.hmg-ai-toc-horizontal,
+.hmg-ai-toc.hmg-ai-toc-minimal,
+.hmg-ai-toc.hmg-ai-toc-sidebar {
+    margin: var(--spacing-lg) 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+    border: none !important;
+    border-left: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: inherit !important;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    overflow: visible !important;
+    position: static !important;
+}
+
+/* Remove any before/after pseudo elements */
+.hmg-ai-takeaways::before,
+.hmg-ai-takeaways::after,
+.hmg-ai-faq::before,
+.hmg-ai-faq::after,
+.hmg-ai-toc::before,
+.hmg-ai-toc::after {
+    display: none !important;
+}
+
+/* Remove hover effects */
+.hmg-ai-takeaways:hover,
+.hmg-ai-faq:hover,
+.hmg-ai-toc:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+/* === HEADER STYLES === */
+.hmg-ai-takeaways-title,
+.hmg-ai-faq-title,
+.hmg-ai-toc-title {
+    font-size: var(--text-lg) !important;
+    font-weight: 600 !important;
+    color: inherit !important;
+    margin: 0 0 var(--spacing-md) 0 !important;
+    line-height: 1.5 !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+/* === TAKEAWAYS === */
+.hmg-ai-takeaways-list,
+.hmg-ai-takeaways-cards,
+.hmg-ai-takeaways-numbered,
+.hmg-ai-takeaways-highlights {
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    display: block !important;
+}
+
+.hmg-ai-takeaway-item,
+.hmg-ai-takeaway-card,
+.hmg-ai-takeaway-highlight {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: var(--spacing-sm) !important;
+    padding: var(--spacing-xs) 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid var(--color-border) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.hmg-ai-takeaway-item:last-child,
+.hmg-ai-takeaway-card:last-child,
+.hmg-ai-takeaway-highlight:last-child {
+    border-bottom: none !important;
+}
+
+.hmg-ai-takeaway-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    color: var(--color-primary);
+    opacity: 0.7;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.hmg-ai-takeaway-text,
+.hmg-ai-takeaway-content {
+    flex: 1;
+    color: inherit !important;
+    opacity: 1 !important;
+    line-height: 1.6;
+    background: transparent !important;
+}
+
+/* Override any card or numbered styles */
+.hmg-ai-takeaway-number {
+    display: none !important;
+}
+
+/* === FAQ === */
+.hmg-ai-faq-accordion {
+    margin: 0;
+}
+
+.hmg-ai-faq-accordion-item {
+    border-bottom: 1px solid var(--color-border);
+}
+
+.hmg-ai-faq-accordion-item:last-child {
+    border-bottom: none;
+}
+
+.hmg-ai-faq-accordion-button {
+    width: 100%;
+    padding: var(--spacing-sm) 0;
+    background: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: inherit;
+    font-size: var(--text-base);
+    font-weight: 500;
+    line-height: 1.5;
+    transition: opacity var(--transition-fast);
+}
+
+.hmg-ai-faq-accordion-button:hover {
+    opacity: 0.8;
+}
+
+.hmg-ai-faq-accordion-button:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: -2px;
+}
+
+.hmg-ai-faq-question {
+    flex: 1;
+    text-align: left;
+    opacity: 1 !important;
+    color: inherit !important;
+}
+
+.hmg-ai-faq-icon {
+    width: 20px;
+    height: 20px;
+    opacity: 0.5;
+    transition: transform var(--transition-fast);
+}
+
+.hmg-ai-faq-accordion-button[aria-expanded="true"] .hmg-ai-faq-icon {
+    transform: rotate(180deg);
+}
+
+.hmg-ai-faq-accordion-content {
+    overflow: hidden;
+    transition: all var(--transition-base);
+}
+
+.hmg-ai-faq-accordion-content[aria-hidden="true"] {
+    display: none;
+}
+
+.hmg-ai-faq-accordion-content[aria-hidden="false"] {
+    display: block;
+}
+
+.hmg-ai-faq-answer {
+    padding: var(--spacing-sm) 0 var(--spacing-md) 0;
+    color: inherit !important;
+    opacity: 1 !important;
+    line-height: 1.6;
+    background: transparent !important;
+}
+
+/* FAQ List Style */
+.hmg-ai-faq-list .hmg-ai-faq-item {
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.hmg-ai-faq-list .hmg-ai-faq-item:last-child {
+    border-bottom: none;
+}
+
+.hmg-ai-faq-list .hmg-ai-faq-question {
+    font-size: var(--text-base);
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+    color: inherit !important;
+}
+
+.hmg-ai-faq-list .hmg-ai-faq-answer {
+    padding-left: var(--spacing-md);
+    color: inherit !important;
+}
+
+/* === TABLE OF CONTENTS === */
+.hmg-ai-toc-numbered-list {
+    counter-reset: toc-counter;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.hmg-ai-toc-item {
+    counter-increment: toc-counter;
+    margin-bottom: var(--spacing-xs);
+}
+
+.hmg-ai-toc-link {
+    display: inline-block;
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: rgba(0, 0, 0, 0.2);
+    text-underline-offset: 3px;
+    transition: opacity var(--transition-fast);
+}
+
+.hmg-ai-toc-link::before {
+    content: counter(toc-counter) ". ";
+    opacity: 0.6;
+}
+
+.hmg-ai-toc-link:hover {
+    opacity: 0.7;
+}
+
+.hmg-ai-toc-link:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: -2px;
+    opacity: 1;
+}
+
+.hmg-ai-toc-active {
+    opacity: 1;
+    font-weight: 500;
+}
+
+/* === SEARCH BOX === */
+.hmg-ai-search-box {
+    position: relative;
+    margin-bottom: var(--spacing-md);
+}
+
+.hmg-ai-search-input {
+    width: 100%;
+    padding: var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    font-size: var(--text-sm);
+    color: inherit;
+}
+
+.hmg-ai-search-input:focus {
+    outline: 2px solid currentColor;
+    outline-offset: -2px;
+}
+
+/* === HIGHLIGHT === */
+mark.hmg-ai-highlight {
+    background: rgba(255, 235, 59, 0.4);
+    color: inherit;
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+/* === NO RESULTS === */
+.hmg-ai-no-results {
+    text-align: center;
+    padding: var(--spacing-lg);
+    color: inherit;
+    opacity: 0.6;
+    font-size: var(--text-sm);
+}
+
+/* === INLINE MESSAGES === */
+.hmg-ai-inline-message {
+    padding: var(--spacing-sm);
+    margin: var(--spacing-sm) 0;
+    border-left: 3px solid currentColor;
+    font-size: var(--text-sm);
+    background: transparent !important;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 640px) {
+    .hmg-ai-takeaways,
+    .hmg-ai-faq,
+    .hmg-ai-toc {
+        margin: var(--spacing-md) 0;
+    }
+    
+    .hmg-ai-takeaway-item,
+    .hmg-ai-faq-accordion-button,
+    .hmg-ai-toc-link {
+        font-size: var(--text-sm);
+    }
+}
+
+/* === DARK MODE SUPPORT === */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --color-border: rgba(255, 255, 255, 0.15);
+    }
+}
+
+/* === ANIMATIONS === */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* === ACCESSIBILITY === */
+.screen-reader-text {
+    position: absolute !important;
+    clip: rect(1px, 1px, 1px, 1px);
+    padding: 0 !important;
+    border: 0 !important;
+    height: 1px !important;
+    width: 1px !important;
+    overflow: hidden;
+}
+
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* === PRINT STYLES === */
+@media print {
+    .hmg-ai-search-box,
+    .hmg-ai-toc-toggle {
+        display: none !important;
+    }
+    
+    .hmg-ai-faq-accordion-content {
+        max-height: none !important;
+        opacity: 1 !important;
+    }
+}

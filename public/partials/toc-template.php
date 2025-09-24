@@ -27,7 +27,6 @@ $is_html = isset($toc_data['html']);
 <div class="hmg-ai-toc hmg-ai-toc-<?php echo esc_attr($style); ?>" data-post-id="<?php echo esc_attr($post_id); ?>">
     <div class="hmg-ai-toc-header">
         <h3 class="hmg-ai-toc-title">
-            <span class="hmg-ai-icon">📋</span>
             <?php _e('Table of Contents', 'hmg-ai-blog-enhancer'); ?>
         </h3>
         <?php if ($style === 'sidebar'): ?>
@@ -145,13 +144,6 @@ $is_html = isset($toc_data['html']);
             </ol>
         <?php endif; ?>
     </div>
-    
-    <?php if ($style !== 'sidebar'): ?>
-    <div class="hmg-ai-powered-by">
-        <small><?php _e('AI-Powered Content by', 'hmg-ai-blog-enhancer'); ?> 
-        <a href="https://haleymarketing.com" target="_blank" rel="noopener">Haley Marketing</a></small>
-    </div>
-    <?php endif; ?>
 </div>
 
 <script>

@@ -47,6 +47,19 @@ if (isset($_POST['submit']) && wp_verify_nonce($_POST['hmg_ai_settings_nonce'], 
     $new_options['gemini_api_key'] = sanitize_text_field($_POST['gemini_api_key'] ?? '');
     $new_options['openai_api_key'] = sanitize_text_field($_POST['openai_api_key'] ?? '');
     $new_options['claude_api_key'] = sanitize_text_field($_POST['claude_api_key'] ?? '');
+    
+    // TTS settings (Eleven Labs)
+    update_option('hmg_ai_elevenlabs_api_key', sanitize_text_field($_POST['elevenlabs_api_key'] ?? ''));
+    update_option('hmg_ai_tts_voice', sanitize_text_field($_POST['tts_voice'] ?? 'EXAVITQu4vr4xnSDxMaL'));
+    update_option('hmg_ai_tts_stability', floatval($_POST['tts_stability'] ?? 0.5));
+    update_option('hmg_ai_tts_similarity', floatval($_POST['tts_similarity'] ?? 0.75));
+    update_option('hmg_ai_tts_style', floatval($_POST['tts_style'] ?? 0.0));
+    update_option('hmg_ai_tts_speaker_boost', isset($_POST['tts_speaker_boost']) ? 1 : 0);
+    
+    // Dynamic styling settings
+    update_option('hmg_ai_dynamic_styling', isset($_POST['hmg_ai_dynamic_styling']));
+    update_option('hmg_ai_style_override', sanitize_text_field($_POST['hmg_ai_style_override'] ?? 'best-practices'));
+    
     $new_options['gemini_enabled'] = isset($_POST['gemini_enabled']);
     $new_options['openai_enabled'] = isset($_POST['openai_enabled']);
     $new_options['claude_enabled'] = isset($_POST['claude_enabled']);
@@ -256,6 +269,64 @@ if (isset($_POST['submit']) && wp_verify_nonce($_POST['hmg_ai_settings_nonce'], 
             </div>
         </div>
 
+        <!-- Dynamic Styling Settings -->
+        <div class="hmg-ai-settings-section">
+            <h3><?php _e('🎨 Dynamic Styling', 'hmg-ai-blog-enhancer'); ?></h3>
+            <div class="inside">
+                <div class="hmg-ai-form-group">
+                    <label>
+                        <input type="checkbox" 
+                               name="hmg_ai_dynamic_styling" 
+                               value="1" 
+                               <?php checked(get_option('hmg_ai_dynamic_styling', true)); ?> />
+                        <?php _e('Enable Adaptive Content Styling', 'hmg-ai-blog-enhancer'); ?>
+                    </label>
+                    <p class="description">
+                        <?php _e('Automatically analyze and match the visual style of each post for seamless integration of AI-generated content. The system will detect colors, fonts, spacing, and design patterns to ensure perfect visual harmony.', 'hmg-ai-blog-enhancer'); ?>
+                    </p>
+                </div>
+                
+                <div class="hmg-ai-form-group">
+                    <label for="hmg_ai_style_override"><?php _e('Design Mode', 'hmg-ai-blog-enhancer'); ?></label>
+                    <select name="hmg_ai_style_override" id="hmg_ai_style_override" style="width: 100%; max-width: 300px;">
+                        <option value="best-practices" <?php selected(get_option('hmg_ai_style_override', 'best-practices'), 'best-practices'); ?>>
+                            <?php _e('Best Practices (Clean & Minimal)', 'hmg-ai-blog-enhancer'); ?>
+                        </option>
+                        <option value="auto" <?php selected(get_option('hmg_ai_style_override'), 'auto'); ?>>
+                            <?php _e('Auto-detect Theme Style', 'hmg-ai-blog-enhancer'); ?>
+                        </option>
+                        <option value="modern" <?php selected(get_option('hmg_ai_style_override'), 'modern'); ?>>
+                            <?php _e('Modern Style', 'hmg-ai-blog-enhancer'); ?>
+                        </option>
+                        <option value="minimal" <?php selected(get_option('hmg_ai_style_override'), 'minimal'); ?>>
+                            <?php _e('Minimal Style', 'hmg-ai-blog-enhancer'); ?>
+                        </option>
+                        <option value="classic" <?php selected(get_option('hmg_ai_style_override'), 'classic'); ?>>
+                            <?php _e('Classic Style', 'hmg-ai-blog-enhancer'); ?>
+                        </option>
+                        <option value="brand" <?php selected(get_option('hmg_ai_style_override'), 'brand'); ?>>
+                            <?php _e('Haley Marketing Brand', 'hmg-ai-blog-enhancer'); ?>
+                        </option>
+                    </select>
+                    <p class="description">
+                        <?php _e('Choose "Best Practices" for clean, minimal styling that works with any theme. Other options provide more elaborate designs.', 'hmg-ai-blog-enhancer'); ?>
+                    </p>
+                </div>
+                
+                <div class="hmg-ai-form-group">
+                    <p class="hmg-ai-info-box" style="background: #f8f9fa; border-left: 3px solid #6c757d; padding: 15px;">
+                        <strong>🎯 Dynamic Inline Styling:</strong><br>
+                        The plugin now generates inline styles dynamically for each post:<br>
+                        • <strong>Best Practices:</strong> Clean, minimal inline styles that work with any theme<br>
+                        • <strong>Auto-detect:</strong> Analyzes your post and generates adaptive inline styles<br>
+                        • <strong>Other Modes:</strong> Apply specific design patterns inline<br>
+                        <br>
+                        <em>No external CSS files needed - styles are generated on-the-fly!</em>
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <!-- Auto-Generation Settings -->
         <div class="hmg-ai-settings-section">
             <h3><?php _e('🤖 Auto-Generation Settings', 'hmg-ai-blog-enhancer'); ?></h3>
@@ -379,6 +450,103 @@ if (isset($_POST['submit']) && wp_verify_nonce($_POST['hmg_ai_settings_nonce'], 
                         <?php _e('Get your API key from', 'hmg-ai-blog-enhancer'); ?> 
                         <a href="https://console.anthropic.com/" target="_blank">Anthropic Console</a>
                     </p>
+                </div>
+                
+                <!-- Text-to-Speech Settings (Eleven Labs) -->
+                <div style="border-top: 2px solid var(--hmg-royal-blue); padding-top: 20px; margin-top: 30px;">
+                    <h4 style="color: var(--hmg-royal-blue); margin-bottom: 15px;">
+                        <span class="dashicons dashicons-controls-volumeon"></span>
+                        <?php _e('Text-to-Speech Settings (Eleven Labs)', 'hmg-ai-blog-enhancer'); ?>
+                    </h4>
+                    
+                    <div class="hmg-ai-form-group">
+                        <label for="elevenlabs_api_key"><?php _e('Eleven Labs API Key', 'hmg-ai-blog-enhancer'); ?></label>
+                        <input type="password" 
+                               id="elevenlabs_api_key" 
+                               name="elevenlabs_api_key" 
+                               value="<?php echo esc_attr(get_option('hmg_ai_elevenlabs_api_key', '')); ?>" 
+                               placeholder="<?php _e('Enter your Eleven Labs API key...', 'hmg-ai-blog-enhancer'); ?>" 
+                               style="width: 100%; max-width: 500px;" />
+                        <p class="description">
+                            <?php _e('Get your API key from', 'hmg-ai-blog-enhancer'); ?> 
+                            <a href="https://elevenlabs.io/api-keys" target="_blank">Eleven Labs Dashboard</a>
+                            <?php _e('- Industry-leading natural voice quality!', 'hmg-ai-blog-enhancer'); ?>
+                        </p>
+                    </div>
+                    
+                    <div class="hmg-ai-form-group">
+                        <label for="tts_voice"><?php _e('Select Voice', 'hmg-ai-blog-enhancer'); ?></label>
+                        <select id="tts_voice" name="tts_voice" style="width: 100%; max-width: 450px;">
+                            <?php
+                            $selected_voice = get_option('hmg_ai_tts_voice', 'EXAVITQu4vr4xnSDxMaL');
+                            $voices = array(
+                                'EXAVITQu4vr4xnSDxMaL' => 'Sarah - Professional Female (Warm & Clear)',
+                                '21m00Tcm4TlvDq8ikWAM' => 'Rachel - News Narrator (Professional)',
+                                'JBFqnCBsd6RMkjVDRZzb' => 'George - Professional Male (Clear)',
+                                'pNInz6obpgDQGcFmaJgB' => 'Adam - Conversational Male (Natural)',
+                                '2EiwWnXFnvU5JabPnv8n' => 'Clyde - Deep Male (Authoritative)',
+                                'TX3LPaxmHKxFdv7VOQHJ' => 'Liam - Storyteller (Engaging)',
+                                'ThT5KcBeYPX3keUQqHPh' => 'Dorothy - British Female (Professional)',
+                                'IKne3meq5aSn9XLyUdCD' => 'Charlie - Australian Male (Friendly)'
+                            );
+                            foreach ($voices as $id => $name) {
+                                echo '<option value="' . esc_attr($id) . '" ' . selected($selected_voice, $id, false) . '>' . esc_html($name) . '</option>';
+                            }
+                            ?>
+                        </select>
+                        <p class="description"><?php _e('Choose from premium Eleven Labs voices', 'hmg-ai-blog-enhancer'); ?></p>
+                    </div>
+                    
+                    <div class="hmg-ai-form-group">
+                        <label for="tts_stability"><?php _e('Voice Stability', 'hmg-ai-blog-enhancer'); ?></label>
+                        <input type="range" 
+                               id="tts_stability" 
+                               name="tts_stability" 
+                               min="0" 
+                               max="1" 
+                               step="0.1" 
+                               value="<?php echo esc_attr(get_option('hmg_ai_tts_stability', '0.5')); ?>" 
+                               style="width: 100%; max-width: 300px;" />
+                        <span id="stability_value"><?php echo esc_html(get_option('hmg_ai_tts_stability', '0.5')); ?></span>
+                        <p class="description"><?php _e('Lower = more expressive, Higher = more consistent', 'hmg-ai-blog-enhancer'); ?></p>
+                    </div>
+                    
+                    <div class="hmg-ai-form-group">
+                        <label for="tts_similarity"><?php _e('Voice Clarity', 'hmg-ai-blog-enhancer'); ?></label>
+                        <input type="range" 
+                               id="tts_similarity" 
+                               name="tts_similarity" 
+                               min="0" 
+                               max="1" 
+                               step="0.1" 
+                               value="<?php echo esc_attr(get_option('hmg_ai_tts_similarity', '0.75')); ?>" 
+                               style="width: 100%; max-width: 300px;" />
+                        <span id="similarity_value"><?php echo esc_html(get_option('hmg_ai_tts_similarity', '0.75')); ?></span>
+                        <p class="description"><?php _e('Higher = clearer and more consistent voice', 'hmg-ai-blog-enhancer'); ?></p>
+                    </div>
+                    
+                    <div class="hmg-ai-form-group">
+                        <label for="tts_speaker_boost">
+                            <input type="checkbox" 
+                                   id="tts_speaker_boost" 
+                                   name="tts_speaker_boost" 
+                                   value="1" 
+                                   <?php checked(get_option('hmg_ai_tts_speaker_boost', 1), 1); ?> />
+                            <?php _e('Enable Speaker Boost', 'hmg-ai-blog-enhancer'); ?>
+                        </label>
+                        <p class="description"><?php _e('Enhances voice clarity and presence (recommended)', 'hmg-ai-blog-enhancer'); ?></p>
+                    </div>
+                    
+                    <div style="padding: 15px; background: #f8f9fa; border-left: 3px solid #00a32a; margin-top: 20px;">
+                        <strong>🎙️ <?php _e('Eleven Labs Features:', 'hmg-ai-blog-enhancer'); ?></strong>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li><?php _e('Industry-leading natural voice quality', 'hmg-ai-blog-enhancer'); ?></li>
+                            <li><?php _e('Multilingual support (29+ languages)', 'hmg-ai-blog-enhancer'); ?></li>
+                            <li><?php _e('Emotional expression and tone control', 'hmg-ai-blog-enhancer'); ?></li>
+                            <li><?php _e('Perfect for blog posts and articles', 'hmg-ai-blog-enhancer'); ?></li>
+                        </ul>
+                        <em><?php _e('Free tier includes 10,000 characters/month', 'hmg-ai-blog-enhancer'); ?></em>
+                    </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 20px;">

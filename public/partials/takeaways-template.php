@@ -23,7 +23,6 @@ if (empty($takeaways_data)) {
 
 <div class="hmg-ai-takeaways hmg-ai-takeaways-<?php echo esc_attr($style); ?>" data-post-id="<?php echo esc_attr($post_id); ?>">
     <h3 class="hmg-ai-takeaways-title">
-        <span class="hmg-ai-icon">💡</span>
         <?php _e('Key Takeaways', 'hmg-ai-blog-enhancer'); ?>
     </h3>
     
@@ -63,15 +62,10 @@ if (empty($takeaways_data)) {
         <ul class="hmg-ai-takeaways-list">
             <?php foreach ($takeaways_data as $takeaway): ?>
                 <li class="hmg-ai-takeaway-item">
-                    <span class="hmg-ai-takeaway-icon">✓</span>
+                    <span class="hmg-ai-takeaway-icon">•</span>
                     <span class="hmg-ai-takeaway-text"><?php echo esc_html($takeaway); ?></span>
                 </li>
             <?php endforeach; ?>
         </ul>
     <?php endif; ?>
-    
-    <div class="hmg-ai-powered-by">
-        <small><?php _e('AI-Powered Content by', 'hmg-ai-blog-enhancer'); ?> 
-        <a href="https://haleymarketing.com" target="_blank" rel="noopener">Haley Marketing</a></small>
-    </div>
 </div>

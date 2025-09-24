@@ -156,56 +156,57 @@ class HMG_AI_Gemini_Service {
     private function init_prompts() {
         $this->prompts = array(
             'takeaways' => array(
-                'system' => 'You are a professional content analyst for Haley Marketing, specializing in creating concise, actionable key takeaways from blog content. Focus on practical insights that readers can immediately apply.',
-                'user' => 'Analyze the following blog content and create 3-5 key takeaways. Format as HTML with <ul> and <li> tags. Each takeaway should be concise (1-2 sentences) and actionable. Focus on the most valuable insights for the reader.
+                'system' => 'You are a professional content analyst for Haley Marketing, specializing in creating concise, actionable key takeaways from blog content. Focus on practical insights that readers can immediately apply. Always format takeaways as a simple list.',
+                'user' => 'Analyze the following blog content and create 3-5 key takeaways. Each takeaway should be concise (1-2 sentences) and actionable. Focus on the most valuable insights for the reader.
 
 Content to analyze:
 {content}
 
-Please format your response as:
-<div class="hmg-ai-takeaways">
-<h3>Key Takeaways</h3>
-<ul>
-<li>First actionable takeaway</li>
-<li>Second actionable takeaway</li>
-</ul>
-</div>'
+Format your response as a simple list, one takeaway per line:
+• First actionable takeaway here
+• Second actionable takeaway here
+• Third actionable takeaway here
+• Fourth actionable takeaway here (if needed)
+• Fifth actionable takeaway here (if needed)
+
+Do NOT use HTML tags. Do NOT add any headers or titles. Just provide the bullet points with takeaways.'
             ),
             'faq' => array(
-                'system' => 'You are a professional content strategist for Haley Marketing, expert at identifying common questions readers might have about blog content and providing clear, helpful answers.',
-                'user' => 'Based on the following blog content, generate 3-5 frequently asked questions that readers might have, along with clear, professional answers. Format as HTML with proper structure.
+                'system' => 'You are a professional content strategist for Haley Marketing, expert at identifying common questions readers might have about blog content and providing clear, helpful answers. You MUST format all FAQ responses with Q: and A: markers for proper parsing.',
+                'user' => 'Based on the following blog content, generate 3-5 frequently asked questions that readers might have, along with clear, professional answers. 
+
+IMPORTANT: You MUST format each question and answer with Q: and A: markers exactly as shown below.
 
 Content to analyze:
 {content}
 
-Please format your response as:
-<div class="hmg-ai-faq">
-<h3>Frequently Asked Questions</h3>
-<div class="faq-item">
-<h4>Question 1?</h4>
-<p>Clear, professional answer.</p>
-</div>
-</div>'
+Format your response EXACTLY like this:
+Q: First question here?
+A: Detailed answer to the first question here.
+
+Q: Second question here?
+A: Detailed answer to the second question here.
+
+Q: Third question here?
+A: Detailed answer to the third question here.
+
+Do NOT use any HTML tags. Do NOT add headers. Just use the Q: and A: format shown above.'
             ),
             'toc' => array(
-                'system' => 'You are a professional content organizer for Haley Marketing, expert at creating logical, user-friendly table of contents structures from blog content.',
-                'user' => 'Analyze the following blog content and create a table of contents based on the headings and content structure. Generate anchor links and organize hierarchically.
+                'system' => 'You are a professional content organizer for Haley Marketing, expert at creating logical, user-friendly table of contents structures from blog content. Always format the table of contents as a simple numbered list.',
+                'user' => 'Analyze the following blog content and create a table of contents based on the main sections and important topics. List the main sections in order.
 
 Content to analyze:
 {content}
 
-Please format your response as:
-<div class="hmg-ai-toc">
-<h3>Table of Contents</h3>
-<ol>
-<li><a href="#section-1">Main Section 1</a></li>
-<li><a href="#section-2">Main Section 2</a>
-  <ol>
-    <li><a href="#subsection-2-1">Subsection 2.1</a></li>
-  </ol>
-</li>
-</ol>
-</div>'
+Format your response as a simple numbered list:
+1. First Major Section Title
+2. Second Major Section Title  
+3. Third Major Section Title
+4. Fourth Major Section Title (if needed)
+5. Fifth Major Section Title (if needed)
+
+Do NOT use HTML tags. Do NOT add headers or titles. Do NOT include links or anchors. Just provide the numbered list of section titles based on the content structure.'
             ),
             'summary' => array(
                 'system' => 'You are a professional content summarizer for Haley Marketing, expert at creating concise, engaging summaries that capture the essence of blog content.',
@@ -544,20 +545,33 @@ Please provide a clear, professional summary without HTML formatting.'
      * @return   string                     Formatted content.
      */
     private function format_generated_content($content, $content_type) {
-        // Add Haley Marketing CSS classes
-        $content = str_replace(
-            array('<div class="hmg-ai-', '<h3>', '<h4>'),
-            array('<div class="hmg-ai-generated hmg-ai-', '<h3 class="hmg-ai-heading">', '<h4 class="hmg-ai-subheading">'),
-            $content
-        );
-
-        // Add content type specific wrapper if not present
-        if (strpos($content, 'hmg-ai-' . $content_type) === false) {
-            $content = '<div class="hmg-ai-generated hmg-ai-' . $content_type . '">' . $content . '</div>';
+        // Clean up the content from any HTML tags first
+        $content = wp_strip_all_tags($content);
+        
+        // Remove any excess whitespace
+        $content = trim($content);
+        
+        // The content should already be in the correct format based on our prompts
+        // Just ensure it's clean and properly formatted
+        switch ($content_type) {
+            case 'faq':
+                // FAQ should already have Q: and A: format from the AI
+                // Just clean up any extra whitespace
+                $content = trim($content);
+                break;
+                
+            case 'takeaways':
+                // Takeaways should already have bullet points from the AI
+                // Just clean up any extra whitespace
+                $content = trim($content);
+                break;
+                
+            case 'toc':
+                // TOC should already be a numbered list from the AI
+                // Just clean up any extra whitespace
+                $content = trim($content);
+                break;
         }
-
-        // Add generation timestamp
-        $content .= '<!-- Generated by HMG AI Blog Enhancer on ' . current_time('Y-m-d H:i:s') . ' -->';
 
         return $content;
     }

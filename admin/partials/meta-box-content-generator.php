@@ -137,11 +137,36 @@ $auth_status = $auth_service->get_auth_status();
                 <span class="dashicons dashicons-controls-volumeon"></span>
                 <?php _e('Generate Audio Version', 'hmg-ai-blog-enhancer'); ?>
             </button>
+            
+            <!-- Audio Settings -->
+            <div class="hmg-ai-audio-settings">
+                <div class="hmg-ai-form-group">
+                    <label for="hmg-ai-audio-voice" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px;">
+                        <?php _e('Voice:', 'hmg-ai-blog-enhancer'); ?>
+                    </label>
+                    <select id="hmg-ai-audio-voice" class="hmg-ai-select hmg-ai-compact" style="width: 100%;">
+                        <option value="EXAVITQu4vr4xnSDxMaL">Sarah - Professional Female</option>
+                        <option value="21m00Tcm4TlvDq8ikWAM">Rachel - News Narrator</option>
+                        <option value="JBFqnCBsd6RMkjVDRZzb">George - Professional Male</option>
+                        <option value="pNInz6obpgDQGcFmaJgB">Adam - Conversational Male</option>
+                        <option value="2EiwWnXFnvU5JabPnv8n">Clyde - Deep Male</option>
+                        <option value="TX3LPaxmHKxFdv7VOQHJ">Liam - Storyteller</option>
+                        <option value="ThT5KcBeYPX3keUQqHPh">Dorothy - British Female</option>
+                        <option value="IKne3meq5aSn9XLyUdCD">Charlie - Australian Male</option>
+                    </select>
+                </div>
+                
+                <span class="hmg-ai-audio-info">
+                    <span class="dashicons dashicons-info-outline"></span>
+                    <?php _e('Powered by Eleven Labs - Natural AI voices', 'hmg-ai-blog-enhancer'); ?>
+                </span>
+            </div>
         </div>
-
+        <br />
         <!-- Quick Settings -->
         <div class="hmg-ai-quick-settings">
             <h4><?php _e('Quick Settings', 'hmg-ai-blog-enhancer'); ?></h4>
+            <br />
             
             <label>
                 <input type="checkbox" name="hmg_ai_auto_takeaways" value="1" <?php checked(get_post_meta($post_id, '_hmg_ai_auto_takeaways', true), '1'); ?>>
@@ -158,7 +183,7 @@ $auth_status = $auth_service->get_auth_status();
                 <?php _e('Auto-generate TOC on publish', 'hmg-ai-blog-enhancer'); ?>
             </label>
         </div>
-
+        <br />
         <!-- Generated Content Preview -->
         <?php
         $generated_takeaways = get_post_meta($post_id, '_hmg_ai_takeaways', true);
@@ -173,25 +198,61 @@ $auth_status = $auth_service->get_auth_status();
                 <?php if ($generated_takeaways): ?>
                     <div class="hmg-ai-content-item">
                         <div class="hmg-ai-content-header">
-                            <strong><?php _e('Key Takeaways:', 'hmg-ai-blog-enhancer'); ?></strong>
+                            <strong><?php _e('Key Takeaways', 'hmg-ai-blog-enhancer'); ?></strong>
                             <span class="dashicons dashicons-yes-alt" style="color: var(--hmg-lime-green);"></span>
-                            <div class="hmg-ai-content-actions">
-                                <button type="button" class="button-link hmg-ai-edit-content" data-type="takeaways" data-post-id="<?php echo $post_id; ?>">
-                                    <?php _e('Edit', 'hmg-ai-blog-enhancer'); ?>
-                                </button>
-                                <button type="button" class="button-link hmg-ai-regenerate" data-type="takeaways" data-post-id="<?php echo $post_id; ?>">
-                                    <?php _e('Regenerate', 'hmg-ai-blog-enhancer'); ?>
-                                </button>
-                                <button type="button" class="button-link hmg-ai-insert-shortcode" data-type="takeaways">
-                                    <?php _e('Insert Shortcode', 'hmg-ai-blog-enhancer'); ?>
-                                </button>
-                            </div>
                         </div>
                         <div class="hmg-ai-content-preview" id="takeaways-preview">
-                            <?php echo wp_kses_post(substr(strip_tags($generated_takeaways), 0, 150) . '...'); ?>
+                            <?php 
+                                // Format preview properly
+                                $preview_text = '';
+                                if (is_array($generated_takeaways)) {
+                                    $preview_text = implode(' • ', array_slice($generated_takeaways, 0, 2));
+                                } elseif (is_string($generated_takeaways)) {
+                                    $decoded = json_decode($generated_takeaways, true);
+                                    if ($decoded !== null && is_array($decoded)) {
+                                        $preview_text = implode(' • ', array_slice($decoded, 0, 2));
+                                    } else {
+                                        $preview_text = strip_tags($generated_takeaways);
+                                    }
+                                } else {
+                                    $preview_text = $generated_takeaways;
+                                }
+                                echo wp_kses_post(substr($preview_text, 0, 100) . '...'); 
+                            ?>
                         </div>
+                        <div class="hmg-ai-content-actions">
+                            <button type="button" class="button-link hmg-ai-edit-content" data-type="takeaways" data-post-id="<?php echo $post_id; ?>" title="<?php _e('Edit', 'hmg-ai-blog-enhancer'); ?>">
+                                <span class="dashicons dashicons-edit"></span>
+                            </button>
+                            <button type="button" class="button-link hmg-ai-regenerate" data-type="takeaways" data-post-id="<?php echo $post_id; ?>" title="<?php _e('Regenerate', 'hmg-ai-blog-enhancer'); ?>">
+                                <span class="dashicons dashicons-update"></span>
+                            </button>
+                            <button type="button" class="button-link hmg-ai-insert-shortcode" data-type="takeaways" title="<?php _e('Insert Shortcode', 'hmg-ai-blog-enhancer'); ?>">
+                                <span class="dashicons dashicons-shortcode"></span>
+                            </button>
+                            <button type="button" class="button-link hmg-ai-delete-content" data-type="takeaways" data-post-id="<?php echo $post_id; ?>" title="<?php _e('Delete', 'hmg-ai-blog-enhancer'); ?>" style="color: #d63638;">
+                                <span class="dashicons dashicons-trash"></span>
+                            </button>
+                        </div>
+                        <div class="hmg-ai-content-notice" id="takeaways-notice"></div>
                         <div class="hmg-ai-content-editor" id="takeaways-editor" style="display: none;">
-                            <textarea rows="6" style="width: 100%;" id="takeaways-content"><?php echo esc_textarea(strip_tags($generated_takeaways)); ?></textarea>
+                            <textarea rows="6" style="width: 100%;" id="takeaways-content"><?php 
+                                // Properly format takeaways for editing
+                                if (is_array($generated_takeaways)) {
+                                    echo esc_textarea(implode("\n", $generated_takeaways));
+                                } elseif (is_string($generated_takeaways)) {
+                                    // Try to decode JSON
+                                    $decoded = json_decode($generated_takeaways, true);
+                                    if ($decoded !== null && is_array($decoded)) {
+                                        echo esc_textarea(implode("\n", $decoded));
+                                    } else {
+                                        // Plain text - just output as is
+                                        echo esc_textarea($generated_takeaways);
+                                    }
+                                } else {
+                                    echo esc_textarea($generated_takeaways);
+                                }
+                            ?></textarea>
                             <div class="hmg-ai-editor-actions">
                                 <button type="button" class="button button-primary hmg-ai-save-content" data-type="takeaways" data-post-id="<?php echo $post_id; ?>">
                                     <?php _e('Save', 'hmg-ai-blog-enhancer'); ?>
@@ -207,25 +268,29 @@ $auth_status = $auth_service->get_auth_status();
                 <?php if ($generated_faq): ?>
                     <div class="hmg-ai-content-item">
                         <div class="hmg-ai-content-header">
-                            <strong><?php _e('FAQ:', 'hmg-ai-blog-enhancer'); ?></strong>
+                            <strong><?php _e('FAQ', 'hmg-ai-blog-enhancer'); ?></strong>
                             <span class="dashicons dashicons-yes-alt" style="color: var(--hmg-lime-green);"></span>
-                            <div class="hmg-ai-content-actions">
-                                <button type="button" class="button-link hmg-ai-edit-content" data-type="faq" data-post-id="<?php echo $post_id; ?>">
-                                    <?php _e('Edit', 'hmg-ai-blog-enhancer'); ?>
-                                </button>
-                                <button type="button" class="button-link hmg-ai-regenerate" data-type="faq" data-post-id="<?php echo $post_id; ?>">
-                                    <?php _e('Regenerate', 'hmg-ai-blog-enhancer'); ?>
-                                </button>
-                                <button type="button" class="button-link hmg-ai-insert-shortcode" data-type="faq">
-                                    <?php _e('Insert Shortcode', 'hmg-ai-blog-enhancer'); ?>
-                                </button>
-                            </div>
                         </div>
                         <div class="hmg-ai-content-preview" id="faq-preview">
-                            <?php echo wp_kses_post(substr(strip_tags($generated_faq), 0, 150) . '...'); ?>
+                            <?php echo wp_kses_post(substr(strip_tags($generated_faq), 0, 100) . '...'); ?>
                         </div>
+                        <div class="hmg-ai-content-actions">
+                            <button type="button" class="button-link hmg-ai-edit-content" data-type="faq" data-post-id="<?php echo $post_id; ?>" title="<?php _e('Edit', 'hmg-ai-blog-enhancer'); ?>">
+                                <span class="dashicons dashicons-edit"></span>
+                            </button>
+                            <button type="button" class="button-link hmg-ai-regenerate" data-type="faq" data-post-id="<?php echo $post_id; ?>" title="<?php _e('Regenerate', 'hmg-ai-blog-enhancer'); ?>">
+                                <span class="dashicons dashicons-update"></span>
+                            </button>
+                            <button type="button" class="button-link hmg-ai-insert-shortcode" data-type="faq" title="<?php _e('Insert Shortcode', 'hmg-ai-blog-enhancer'); ?>">
+                                <span class="dashicons dashicons-shortcode"></span>
+                            </button>
+                            <button type="button" class="button-link hmg-ai-delete-content" data-type="faq" data-post-id="<?php echo $post_id; ?>" title="<?php _e('Delete', 'hmg-ai-blog-enhancer'); ?>" style="color: #d63638;">
+                                <span class="dashicons dashicons-trash"></span>
+                            </button>
+                        </div>
+                        <div class="hmg-ai-content-notice" id="faq-notice"></div>
                         <div class="hmg-ai-content-editor" id="faq-editor" style="display: none;">
-                            <textarea rows="8" style="width: 100%;" id="faq-content"><?php echo esc_textarea(strip_tags($generated_faq)); ?></textarea>
+                            <textarea rows="8" style="width: 100%;" id="faq-content"><?php echo esc_textarea($generated_faq); ?></textarea>
                             <div class="hmg-ai-editor-actions">
                                 <button type="button" class="button button-primary hmg-ai-save-content" data-type="faq" data-post-id="<?php echo $post_id; ?>">
                                     <?php _e('Save', 'hmg-ai-blog-enhancer'); ?>
@@ -241,25 +306,29 @@ $auth_status = $auth_service->get_auth_status();
                 <?php if ($generated_toc): ?>
                     <div class="hmg-ai-content-item">
                         <div class="hmg-ai-content-header">
-                            <strong><?php _e('Table of Contents:', 'hmg-ai-blog-enhancer'); ?></strong>
+                            <strong><?php _e('Table of Contents', 'hmg-ai-blog-enhancer'); ?></strong>
                             <span class="dashicons dashicons-yes-alt" style="color: var(--hmg-lime-green);"></span>
-                            <div class="hmg-ai-content-actions">
-                                <button type="button" class="button-link hmg-ai-edit-content" data-type="toc" data-post-id="<?php echo $post_id; ?>">
-                                    <?php _e('Edit', 'hmg-ai-blog-enhancer'); ?>
-                                </button>
-                                <button type="button" class="button-link hmg-ai-regenerate" data-type="toc" data-post-id="<?php echo $post_id; ?>">
-                                    <?php _e('Regenerate', 'hmg-ai-blog-enhancer'); ?>
-                                </button>
-                                <button type="button" class="button-link hmg-ai-insert-shortcode" data-type="toc">
-                                    <?php _e('Insert Shortcode', 'hmg-ai-blog-enhancer'); ?>
-                                </button>
-                            </div>
                         </div>
                         <div class="hmg-ai-content-preview" id="toc-preview">
-                            <?php echo wp_kses_post(substr(strip_tags($generated_toc), 0, 150) . '...'); ?>
+                            <?php echo wp_kses_post(substr(strip_tags($generated_toc), 0, 100) . '...'); ?>
                         </div>
+                        <div class="hmg-ai-content-actions">
+                            <button type="button" class="button-link hmg-ai-edit-content" data-type="toc" data-post-id="<?php echo $post_id; ?>" title="<?php _e('Edit', 'hmg-ai-blog-enhancer'); ?>">
+                                <span class="dashicons dashicons-edit"></span>
+                            </button>
+                            <button type="button" class="button-link hmg-ai-regenerate" data-type="toc" data-post-id="<?php echo $post_id; ?>" title="<?php _e('Regenerate', 'hmg-ai-blog-enhancer'); ?>">
+                                <span class="dashicons dashicons-update"></span>
+                            </button>
+                            <button type="button" class="button-link hmg-ai-insert-shortcode" data-type="toc" title="<?php _e('Insert Shortcode', 'hmg-ai-blog-enhancer'); ?>">
+                                <span class="dashicons dashicons-shortcode"></span>
+                            </button>
+                            <button type="button" class="button-link hmg-ai-delete-content" data-type="toc" data-post-id="<?php echo $post_id; ?>" title="<?php _e('Delete', 'hmg-ai-blog-enhancer'); ?>" style="color: #d63638;">
+                                <span class="dashicons dashicons-trash"></span>
+                            </button>
+                        </div>
+                        <div class="hmg-ai-content-notice" id="toc-notice"></div>
                         <div class="hmg-ai-content-editor" id="toc-editor" style="display: none;">
-                            <textarea rows="6" style="width: 100%;" id="toc-content"><?php echo esc_textarea(strip_tags($generated_toc)); ?></textarea>
+                            <textarea rows="6" style="width: 100%;" id="toc-content"><?php echo esc_textarea($generated_toc); ?></textarea>
                             <div class="hmg-ai-editor-actions">
                                 <button type="button" class="button button-primary hmg-ai-save-content" data-type="toc" data-post-id="<?php echo $post_id; ?>">
                                     <?php _e('Save', 'hmg-ai-blog-enhancer'); ?>

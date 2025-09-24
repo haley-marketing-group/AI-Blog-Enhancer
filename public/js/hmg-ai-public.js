@@ -2,15 +2,29 @@
  * HMG AI Blog Enhancer - Public JavaScript
  * 
  * Frontend interactions for AI-generated content
+ * Sprint 4.2: Enhanced with smooth animations, scroll spy, and WCAG 2.1 AA compliance
  */
 
 (function($) {
     'use strict';
+    
+    // Add jQuery easing for smooth animations
+    $.extend($.easing, {
+        easeInOutCubic: function(x, t, b, c, d) {
+            if ((t /= d / 2) < 1) return c / 2 * t * t * t + b;
+            return c / 2 * ((t -= 2) * t * t + 2) + b;
+        }
+    });
 
     /**
      * Main public object
      */
     const HMGAIPublic = {
+        
+        // Configuration
+        scrollOffset: 100,
+        animationDuration: 400,
+        tocActiveClass: 'hmg-ai-toc-active',
         
         /**
          * Initialize public functionality
@@ -19,44 +33,101 @@
             this.initFAQAccordion();
             this.initSmoothScrolling();
             this.initAccessibility();
+            this.initTOCScrollSpy();
             this.initTOCProgress();
             this.initAudioControls();
             this.initTakeawaysInteractions();
+            this.initKeyboardNavigation();
+            this.initSearchFunctionality();
+            this.initReducedMotion();
         },
 
         /**
-         * Initialize FAQ accordion functionality
+         * Initialize FAQ accordion with enhanced animations
          */
         initFAQAccordion: function() {
-            // New accordion button functionality
+            const self = this;
+            
+            // Enhanced accordion functionality with cubic-bezier easing
             $(document).on('click', '[data-hmg-faq-toggle]', function(e) {
                 e.preventDefault();
                 
                 const $button = $(this);
                 const $content = $('#' + $button.attr('aria-controls'));
                 const isExpanded = $button.attr('aria-expanded') === 'true';
+                const $item = $button.closest('.hmg-ai-faq-accordion-item');
                 
-                // Toggle states
+                // Add animation class
+                $item.addClass('hmg-ai-transitioning');
+                
+                // Toggle states with enhanced animation
                 $button.toggleClass('hmg-ai-active');
                 $button.attr('aria-expanded', !isExpanded);
                 
+                // Enhanced slide animation with easing
                 if (isExpanded) {
-                    $content.slideUp(300, function() {
-                        $content.removeClass('hmg-ai-active').hide();
+                    $content.css('height', $content.height());
+                    $content.animate({
+                        height: 0,
+                        opacity: 0
+                    }, {
+                        duration: self.animationDuration,
+                        easing: 'easeInOutCubic',
+                        complete: function() {
+                            $content.removeClass('hmg-ai-active').hide().css({
+                                height: '',
+                                opacity: ''
+                            });
+                            $item.removeClass('hmg-ai-transitioning');
+                        }
                     });
                 } else {
-                    $content.addClass('hmg-ai-active').slideDown(300);
+                    $content.show().addClass('hmg-ai-active');
+                    const targetHeight = $content.prop('scrollHeight');
+                    $content.css({ height: 0, opacity: 0 });
+                    $content.animate({
+                        height: targetHeight,
+                        opacity: 1
+                    }, {
+                        duration: self.animationDuration,
+                        easing: 'easeInOutCubic',
+                        complete: function() {
+                            $content.css('height', 'auto');
+                            $item.removeClass('hmg-ai-transitioning');
+                            
+                            // Announce to screen readers
+                            self.announceToScreenReader('Expanded ' + $button.text());
+                        }
+                    });
                 }
                 
-                // Close other items in accordion (optional)
+                // Close other items with staggered animation
                 const $accordion = $button.closest('.hmg-ai-faq-accordion');
                 if ($accordion.length) {
+                    let delay = 0;
                     $accordion.find('[data-hmg-faq-toggle]').not($button).each(function() {
                         const $otherButton = $(this);
                         const $otherContent = $('#' + $otherButton.attr('aria-controls'));
                         
-                        $otherButton.removeClass('hmg-ai-active').attr('aria-expanded', 'false');
-                        $otherContent.removeClass('hmg-ai-active').slideUp(300);
+                        if ($otherButton.attr('aria-expanded') === 'true') {
+                            setTimeout(function() {
+                                $otherButton.removeClass('hmg-ai-active').attr('aria-expanded', 'false');
+                                $otherContent.animate({
+                                    height: 0,
+                                    opacity: 0
+                                }, {
+                                    duration: self.animationDuration - 100,
+                                    easing: 'easeInOutCubic',
+                                    complete: function() {
+                                        $otherContent.removeClass('hmg-ai-active').hide().css({
+                                            height: '',
+                                            opacity: ''
+                                        });
+                                    }
+                                });
+                            }, delay);
+                            delay += 50; // Stagger animations
+                        }
                     });
                 }
             });
@@ -444,6 +515,409 @@
                     });
                 }
             });
+        },
+
+        /**
+         * Initialize TOC Scroll Spy for active section highlighting
+         */
+        initTOCScrollSpy: function() {
+            const self = this;
+            const $tocLinks = $('.hmg-ai-toc a[href^="#"], [data-hmg-smooth-scroll]');
+            
+            if (!$tocLinks.length) return;
+            
+            // Create array of sections with their positions
+            const updateSectionPositions = function() {
+                const sections = [];
+                $tocLinks.each(function() {
+                    const targetId = $(this).attr('href').replace('#', '');
+                    const $target = $('#' + targetId);
+                    
+                    if ($target.length) {
+                        sections.push({
+                            id: targetId,
+                            offset: $target.offset().top,
+                            height: $target.outerHeight(),
+                            link: $(this)
+                        });
+                    }
+                });
+                return sections.sort((a, b) => a.offset - b.offset);
+            };
+            
+            let sections = updateSectionPositions();
+            
+            // Update active section on scroll
+            const updateActiveSection = function() {
+                const scrollTop = $(window).scrollTop() + self.scrollOffset;
+                let activeSection = null;
+                
+                // Find the current section
+                for (let i = sections.length - 1; i >= 0; i--) {
+                    if (scrollTop >= sections[i].offset - 10) {
+                        activeSection = sections[i];
+                        break;
+                    }
+                }
+                
+                // Update active classes
+                $tocLinks.parent().removeClass(self.tocActiveClass);
+                if (activeSection) {
+                    activeSection.link.parent().addClass(self.tocActiveClass);
+                    
+                    // Update ARIA current
+                    $tocLinks.removeAttr('aria-current');
+                    activeSection.link.attr('aria-current', 'true');
+                    
+                    // Update progress indicator if exists
+                    const progress = ((scrollTop - activeSection.offset) / activeSection.height) * 100;
+                    $('.hmg-ai-toc-section-progress').css('width', Math.min(100, Math.max(0, progress)) + '%');
+                }
+            };
+            
+            // Debounced scroll handler
+            let scrollTimer;
+            $(window).on('scroll', function() {
+                if (scrollTimer) clearTimeout(scrollTimer);
+                scrollTimer = setTimeout(updateActiveSection, 10);
+            });
+            
+            // Update on resize
+            $(window).on('resize', function() {
+                sections = updateSectionPositions();
+                updateActiveSection();
+            });
+            
+            // Initial update
+            updateActiveSection();
+        },
+
+        /**
+         * Enhanced keyboard navigation
+         */
+        initKeyboardNavigation: function() {
+            const self = this;
+            
+            // FAQ keyboard navigation with arrow keys
+            $(document).on('keydown', '[data-hmg-faq-toggle], .hmg-ai-faq-question', function(e) {
+                const $current = $(this);
+                const $items = $('[data-hmg-faq-toggle], .hmg-ai-faq-question');
+                const currentIndex = $items.index($current);
+                
+                switch(e.which) {
+                    case 38: // Arrow Up
+                        e.preventDefault();
+                        if (currentIndex > 0) {
+                            $items.eq(currentIndex - 1).focus();
+                        }
+                        break;
+                    case 40: // Arrow Down
+                        e.preventDefault();
+                        if (currentIndex < $items.length - 1) {
+                            $items.eq(currentIndex + 1).focus();
+                        }
+                        break;
+                    case 36: // Home
+                        e.preventDefault();
+                        $items.first().focus();
+                        break;
+                    case 35: // End
+                        e.preventDefault();
+                        $items.last().focus();
+                        break;
+                }
+            });
+            
+            // TOC keyboard navigation
+            $(document).on('keydown', '.hmg-ai-toc a', function(e) {
+                const $current = $(this);
+                const $links = $('.hmg-ai-toc a');
+                const currentIndex = $links.index($current);
+                
+                switch(e.which) {
+                    case 38: // Arrow Up
+                    case 37: // Arrow Left
+                        e.preventDefault();
+                        if (currentIndex > 0) {
+                            $links.eq(currentIndex - 1).focus();
+                        }
+                        break;
+                    case 40: // Arrow Down
+                    case 39: // Arrow Right
+                        e.preventDefault();
+                        if (currentIndex < $links.length - 1) {
+                            $links.eq(currentIndex + 1).focus();
+                        }
+                        break;
+                }
+            });
+            
+            // Escape key to close expanded FAQ items
+            $(document).on('keydown', function(e) {
+                if (e.which === 27) { // Escape
+                    const $activeItems = $('[aria-expanded="true"]');
+                    if ($activeItems.length) {
+                        $activeItems.each(function() {
+                            if ($(this).is('[data-hmg-faq-toggle], .hmg-ai-faq-question')) {
+                                $(this).click();
+                            }
+                        });
+                        $activeItems.first().focus();
+                    }
+                }
+            });
+        },
+
+        /**
+         * Initialize search functionality for generated content
+         */
+        initSearchFunctionality: function() {
+            const self = this;
+            
+            // Add search box if there's searchable content
+            const $searchableContainers = $('.hmg-ai-faq, .hmg-ai-takeaways');
+            
+            if ($searchableContainers.length) {
+                $searchableContainers.each(function() {
+                    const $container = $(this);
+                    const $header = $container.find('.hmg-ai-faq-header, .hmg-ai-takeaways-header').first();
+                    
+                    // Add search input
+                    const $searchBox = $('<div class="hmg-ai-search-box">' +
+                        '<input type="search" class="hmg-ai-search-input" placeholder="Search..." aria-label="Search content">' +
+                        '<span class="hmg-ai-search-icon">🔍</span>' +
+                        '</div>');
+                    
+                    $header.append($searchBox);
+                    
+                    // Search functionality
+                    const $searchInput = $searchBox.find('.hmg-ai-search-input');
+                    let searchTimer;
+                    
+                    $searchInput.on('input', function() {
+                        clearTimeout(searchTimer);
+                        const query = $(this).val().toLowerCase();
+                        
+                        searchTimer = setTimeout(function() {
+                            if (query.length > 1) {
+                                // Search FAQs
+                                if ($container.hasClass('hmg-ai-faq')) {
+                                    $container.find('.hmg-ai-faq-accordion-item').each(function() {
+                                        const $item = $(this);
+                                        const text = $item.text().toLowerCase();
+                                        
+                                        if (text.includes(query)) {
+                                            $item.show().addClass('hmg-ai-search-match');
+                                            // Highlight matching text
+                                            self.highlightText($item, query);
+                                        } else {
+                                            $item.hide().removeClass('hmg-ai-search-match');
+                                        }
+                                    });
+                                    
+                                    // Show message if no results
+                                    const visibleItems = $container.find('.hmg-ai-faq-accordion-item:visible').length;
+                                    if (visibleItems === 0) {
+                                        self.showNoResultsMessage($container);
+                                    } else {
+                                        self.hideNoResultsMessage($container);
+                                    }
+                                }
+                                
+                                // Search takeaways
+                                if ($container.hasClass('hmg-ai-takeaways')) {
+                                    $container.find('.hmg-ai-takeaway-item').each(function() {
+                                        const $item = $(this);
+                                        const text = $item.text().toLowerCase();
+                                        
+                                        if (text.includes(query)) {
+                                            $item.show().addClass('hmg-ai-search-match');
+                                            self.highlightText($item, query);
+                                        } else {
+                                            $item.hide().removeClass('hmg-ai-search-match');
+                                        }
+                                    });
+                                }
+                            } else {
+                                // Show all items if search is cleared
+                                $container.find('.hmg-ai-faq-accordion-item, .hmg-ai-takeaway-item').show();
+                                self.removeHighlights($container);
+                                self.hideNoResultsMessage($container);
+                            }
+                        }, 300);
+                    });
+                    
+                    // Clear search on escape
+                    $searchInput.on('keydown', function(e) {
+                        if (e.which === 27) {
+                            $(this).val('').trigger('input');
+                        }
+                    });
+                });
+            }
+        },
+
+        /**
+         * Initialize reduced motion preferences
+         */
+        initReducedMotion: function() {
+            // Check if user prefers reduced motion
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            
+            if (prefersReducedMotion) {
+                // Disable animations
+                $('body').addClass('hmg-ai-reduced-motion');
+                
+                // Override animation duration
+                this.animationDuration = 0;
+                
+                // Use simpler show/hide instead of animations
+                $.fx.off = true;
+            }
+            
+            // Listen for changes in motion preference
+            window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', function(e) {
+                if (e.matches) {
+                    $('body').addClass('hmg-ai-reduced-motion');
+                    $.fx.off = true;
+                } else {
+                    $('body').removeClass('hmg-ai-reduced-motion');
+                    $.fx.off = false;
+                }
+            });
+        },
+
+        /**
+         * Announce to screen readers
+         */
+        announceToScreenReader: function(message) {
+            // Create or get announcement region
+            let $announcer = $('#hmg-ai-announcer');
+            
+            if (!$announcer.length) {
+                $announcer = $('<div id="hmg-ai-announcer" aria-live="polite" aria-atomic="true" style="position: absolute; left: -9999px;"></div>');
+                $('body').append($announcer);
+            }
+            
+            // Clear and set new message
+            $announcer.text('');
+            setTimeout(function() {
+                $announcer.text(message);
+            }, 100);
+        },
+
+        /**
+         * Highlight search text
+         */
+        highlightText: function($element, query) {
+            const self = this;
+            self.removeHighlights($element);
+            
+            $element.find(':not(script)').contents().filter(function() {
+                return this.nodeType === 3;
+            }).each(function() {
+                const text = $(this).text();
+                const regex = new RegExp('(' + query + ')', 'gi');
+                
+                if (regex.test(text)) {
+                    const highlighted = text.replace(regex, '<mark class="hmg-ai-highlight">$1</mark>');
+                    $(this).replaceWith(highlighted);
+                }
+            });
+        },
+
+        /**
+         * Remove text highlights
+         */
+        removeHighlights: function($element) {
+            $element.find('mark.hmg-ai-highlight').each(function() {
+                $(this).replaceWith($(this).text());
+            });
+        },
+
+        /**
+         * Show no results message
+         */
+        showNoResultsMessage: function($container) {
+            this.hideNoResultsMessage($container);
+            const $message = $('<div class="hmg-ai-no-results" tabindex="-1">No results found. Try a different search term.</div>');
+            $container.find('.hmg-ai-faq-content, .hmg-ai-takeaways-content').append($message);
+            
+            // Scroll to and focus the message
+            this.scrollToElement($message, function() {
+                $message.focus();
+            });
+            
+            // Announce to screen readers
+            this.announceToScreenReader('No results found. Try a different search term.');
+        },
+
+        /**
+         * Hide no results message
+         */
+        hideNoResultsMessage: function($container) {
+            $container.find('.hmg-ai-no-results').remove();
+        },
+        
+        /**
+         * Scroll to element with callback
+         */
+        scrollToElement: function($element, callback) {
+            if (!$element || !$element.length) return;
+            
+            const offset = $element.offset().top - this.scrollOffset;
+            
+            $('html, body').animate({
+                scrollTop: offset
+            }, this.animationDuration, 'easeInOutCubic', function() {
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            });
+        },
+        
+        /**
+         * Show inline message for content items
+         */
+        showInlineMessage: function(message, type, $container) {
+            // Remove existing messages
+            $container.find('.hmg-ai-inline-message').remove();
+            
+            // Create message element
+            const iconMap = {
+                'success': 'dashicons-yes',
+                'error': 'dashicons-warning',
+                'info': 'dashicons-info',
+                'warning': 'dashicons-warning'
+            };
+            
+            const $message = $(`
+                <div class="hmg-ai-inline-message hmg-ai-message-${type}" tabindex="-1">
+                    <span class="dashicons ${iconMap[type] || 'dashicons-info'}"></span>
+                    <span class="hmg-ai-message-text">${message}</span>
+                </div>
+            `);
+            
+            // Insert message
+            $container.append($message);
+            
+            // Animate in and scroll to it
+            $message.hide().fadeIn(this.animationDuration / 2);
+            this.scrollToElement($message, function() {
+                $message.focus();
+            });
+            
+            // Announce to screen readers
+            this.announceToScreenReader(message);
+            
+            // Auto-hide after delay for success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    $message.fadeOut(this.animationDuration, function() {
+                        $(this).remove();
+                    });
+                }, 5000);
+            }
         }
     };
 

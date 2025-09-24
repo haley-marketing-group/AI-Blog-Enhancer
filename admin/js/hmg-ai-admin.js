@@ -3,7 +3,7 @@
  *
  * Handles all admin-side functionality including meta box interactions,
  * AJAX content generation, and UI updates with professional polish.
- *
+ * 
  * @package HMG_AI_Blog_Enhancer
  * @since 1.0.0
  */
@@ -20,27 +20,107 @@
          * Initialize the admin interface
          */
         init: function() {
+            this.createModal();
             this.bindEvents();
             this.initializeUsageBars();
             this.setupAutoSave();
+        },
+        
+        /**
+         * Create custom modal HTML
+         */
+        createModal: function() {
+            const modalHTML = `
+                <div id="hmg-ai-modal" class="hmg-ai-modal">
+                    <div class="hmg-ai-modal-overlay"></div>
+                    <div class="hmg-ai-modal-content">
+                        <div class="hmg-ai-modal-header">
+                            <h3 class="hmg-ai-modal-title"></h3>
+                            <button class="hmg-ai-modal-close" aria-label="Close">
+                                <span class="dashicons dashicons-no"></span>
+                            </button>
+                        </div>
+                        <div class="hmg-ai-modal-body"></div>
+                        <div class="hmg-ai-modal-footer">
+                            <button class="button hmg-ai-modal-cancel">Cancel</button>
+                            <button class="button button-primary hmg-ai-modal-confirm">Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to body if it doesn't exist
+            if (!$('#hmg-ai-modal').length) {
+                $('body').append(modalHTML);
+            }
+        },
+        
+        /**
+         * Show custom modal
+         */
+        showModal: function(title, message, onConfirm, confirmText = 'Confirm', confirmClass = 'button-primary') {
+            const $modal = $('#hmg-ai-modal');
+            $modal.find('.hmg-ai-modal-title').text(title);
+            $modal.find('.hmg-ai-modal-body').html(message);
+            
+            const $confirmBtn = $modal.find('.hmg-ai-modal-confirm');
+            $confirmBtn.text(confirmText).removeClass('button-primary button-danger').addClass(confirmClass);
+            
+            // Fade in with animation
+            $modal.fadeIn(200).addClass('show');
+            
+            // Remove any existing handlers
+            $modal.find('.hmg-ai-modal-confirm').off('click');
+            $modal.find('.hmg-ai-modal-cancel').off('click');
+            $modal.find('.hmg-ai-modal-close').off('click');
+            $modal.find('.hmg-ai-modal-overlay').off('click');
+            
+            // Bind new handlers
+            $modal.find('.hmg-ai-modal-confirm').on('click', () => {
+                this.hideModal();
+                if (onConfirm) onConfirm();
+            });
+            
+            $modal.find('.hmg-ai-modal-cancel, .hmg-ai-modal-close, .hmg-ai-modal-overlay').on('click', () => {
+                this.hideModal();
+            });
+            
+            // ESC key to close
+            $(document).on('keyup.hmgModal', (e) => {
+                if (e.key === 'Escape') {
+                    this.hideModal();
+                }
+            });
+        },
+        
+        /**
+         * Hide custom modal
+         */
+        hideModal: function() {
+            const $modal = $('#hmg-ai-modal');
+            $modal.fadeOut(200, () => {
+                $modal.removeClass('show hmg-ai-modal-success hmg-ai-modal-error');
+            });
+            $(document).off('keyup.hmgModal');
         },
 
         /**
          * Bind all event handlers
          */
         bindEvents: function() {
-            // Content generation buttons
-            $(document).on('click', '.hmg-ai-generate-takeaways', this.generateTakeaways.bind(this));
-            $(document).on('click', '.hmg-ai-generate-faq', this.generateFAQ.bind(this));
-            $(document).on('click', '.hmg-ai-generate-toc', this.generateTOC.bind(this));
-            $(document).on('click', '.hmg-ai-generate-audio', this.generateAudio.bind(this));
+            // Content generation buttons - use namespaced events to prevent double binding
+            $(document).off('click.hmgai-takeaways').on('click.hmgai-takeaways', '.hmg-ai-generate-takeaways', this.generateTakeaways.bind(this));
+            $(document).off('click.hmgai-faq').on('click.hmgai-faq', '.hmg-ai-generate-faq', this.generateFAQ.bind(this));
+            $(document).off('click.hmgai-toc').on('click.hmgai-toc', '.hmg-ai-generate-toc', this.generateTOC.bind(this));
+            $(document).off('click.hmgai-audio').on('click.hmgai-audio', '.hmg-ai-generate-audio', this.generateAudio.bind(this));
 
-            // Edit content buttons
-            $(document).on('click', '.hmg-ai-edit-content', this.editContent.bind(this));
-            $(document).on('click', '.hmg-ai-save-content', this.saveContent.bind(this));
-            $(document).on('click', '.hmg-ai-cancel-edit', this.cancelEdit.bind(this));
-            $(document).on('click', '.hmg-ai-regenerate', this.regenerateContent.bind(this));
-            $(document).on('click', '.hmg-ai-insert-shortcode', this.insertShortcode.bind(this));
+            // Edit content buttons - use namespaced events to prevent double binding
+            $(document).off('click.hmgai-edit').on('click.hmgai-edit', '.hmg-ai-edit-content', this.editContent.bind(this));
+            $(document).off('click.hmgai-save').on('click.hmgai-save', '.hmg-ai-save-content', this.saveContent.bind(this));
+            $(document).off('click.hmgai-cancel').on('click.hmgai-cancel', '.hmg-ai-cancel-edit', this.cancelEdit.bind(this));
+            $(document).off('click.hmgai-regen').on('click.hmgai-regen', '.hmg-ai-regenerate', this.regenerateContent.bind(this));
+            $(document).off('click.hmgai-shortcode').on('click.hmgai-shortcode', '.hmg-ai-insert-shortcode', this.insertShortcode.bind(this));
+            $(document).off('click.hmgai-delete').on('click.hmgai-delete', '.hmg-ai-delete-content', this.deleteContent.bind(this));
 
             // Test provider buttons
             $(document).on('click', '.hmg-ai-test-providers', this.testProviders.bind(this));
@@ -104,12 +184,12 @@
             } else {
                 content = $('#content').val();
             }
-
+            
             if (!content) {
                 this.showNotice('Please add some content to your post before generating takeaways.', 'warning');
                 return;
             }
-
+            
             this.generateContent('takeaways', content, postId, $button);
         },
 
@@ -127,12 +207,12 @@
             } else {
                 content = $('#content').val();
             }
-
+            
             if (!content) {
                 this.showNotice('Please add some content to your post before generating FAQ.', 'warning');
                 return;
             }
-
+            
             this.generateContent('faq', content, postId, $button);
         },
 
@@ -150,12 +230,12 @@
             } else {
                 content = $('#content').val();
             }
-
+            
             if (!content) {
                 this.showNotice('Please add some content to your post before generating table of contents.', 'warning');
                 return;
             }
-
+            
             this.generateContent('toc', content, postId, $button);
         },
 
@@ -173,13 +253,101 @@
             } else {
                 content = $('#content').val();
             }
-
+            
             if (!content) {
                 this.showNotice('Please add some content to your post before generating audio.', 'warning');
                 return;
             }
+            
+            // Get voice setting for Eleven Labs
+            const voice = $('#hmg-ai-audio-voice').val() || 'EXAVITQu4vr4xnSDxMaL';
+            
+            // Show loading state
+            const originalText = $button.html();
+            $button.prop('disabled', true).html('<span class="dashicons dashicons-update spinning"></span> Generating Audio...');
+            
+            $.ajax({
+                url: hmg_ai_ajax.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'hmg_generate_audio',
+                    nonce: hmg_ai_ajax.nonce,
+                    content: content,
+                    post_id: postId,
+                    voice: voice
+                },
+                success: (response) => {
+                    if (response.success) {
+                        this.showNotice('Audio generated successfully!', 'success', 'audio');
+                        this.updateAudioContent(response.data, postId);
+                        
+                        if (response.data.usage) {
+                            this.updateUsageStats(response.data.usage);
+                        }
+                    } else {
+                        this.showNotice(response.data.message || 'Failed to generate audio.', 'error');
+                    }
+                },
+                error: (xhr, status, error) => {
+                    console.error('Audio generation error:', error);
+                    this.showNotice('An error occurred while generating audio. Please try again.', 'error');
+                },
+                complete: () => {
+                    $button.prop('disabled', false).html(originalText);
+                }
+            });
+        },
 
-            this.showNotice('Audio generation is coming soon! This feature will be available in the next update.', 'info');
+        /**
+         * Update audio content in the UI
+         */
+        updateAudioContent: function(data, postId) {
+            const audioHtml = `
+                <div class="hmg-ai-content-item" id="audio-item">
+                    <div class="hmg-ai-content-header">
+                        <strong>Audio Version</strong>
+                        <span class="dashicons dashicons-yes-alt" style="color: var(--hmg-lime-green);"></span>
+                    </div>
+                    <div class="hmg-ai-audio-player-wrapper">
+                        <audio controls class="hmg-ai-audio-player" style="width: 100%;">
+                            <source src="${data.audio_url}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
+                        <div class="hmg-ai-audio-info">
+                            <span class="hmg-ai-audio-duration">Duration: ${data.duration ? data.duration.formatted : 'Unknown'}</span>
+                            <span class="hmg-ai-separator">•</span>
+                            <span class="hmg-ai-audio-voice">Voice: ${data.voice || 'Default'}</span>
+                        </div>
+                    </div>
+                    <div class="hmg-ai-content-actions">
+                        <button type="button" class="button-link hmg-ai-regenerate" data-type="audio" data-post-id="${postId}" title="Regenerate">
+                            <span class="dashicons dashicons-update"></span>
+                        </button>
+                        <button type="button" class="button-link hmg-ai-insert-shortcode" data-type="audio" title="Insert Shortcode">
+                            <span class="dashicons dashicons-shortcode"></span>
+                        </button>
+                        <a href="${data.audio_url}" download class="button-link" title="Download">
+                            <span class="dashicons dashicons-download"></span>
+                        </a>
+                        <button type="button" class="button-link hmg-ai-delete-content" data-type="audio" data-post-id="${postId}" title="Delete" style="color: #d63638;">
+                            <span class="dashicons dashicons-trash"></span>
+                        </button>
+                    </div>
+                    <div class="hmg-ai-content-notice" id="audio-notice"></div>
+                </div>
+            `;
+            
+            // Check if audio section already exists
+            let $audioSection = $('#audio-item');
+            if ($audioSection.length) {
+                $audioSection.replaceWith(audioHtml);
+            } else {
+                // Add to generated content section
+                if (!$('.hmg-ai-generated-content').length) {
+                    $('.hmg-ai-generation-controls').after('<div class="hmg-ai-generated-content"><h4>Generated Content</h4></div>');
+                }
+                $('.hmg-ai-generated-content').append(audioHtml);
+            }
         },
 
         /**
@@ -191,7 +359,7 @@
             
             $button.prop('disabled', true).html(loadingText);
             this.hideNotices();
-
+            
             $.ajax({
                 url: hmg_ai_ajax.ajax_url,
                 type: 'POST',
@@ -268,23 +436,27 @@
             return `
                 <div class="hmg-ai-content-item" id="${type}-item">
                     <div class="hmg-ai-content-header">
-                        <strong>${typeLabels[type]}:</strong>
+                        <strong>${typeLabels[type]}</strong>
                         <span class="dashicons dashicons-yes-alt" style="color: var(--hmg-lime-green, #5E9732);"></span>
-                        <div class="hmg-ai-content-actions">
-                            <button type="button" class="button-link hmg-ai-edit-content" data-type="${type}" data-post-id="${postId}">
-                                Edit
-                            </button>
-                            <button type="button" class="button-link hmg-ai-regenerate" data-type="${type}" data-post-id="${postId}">
-                                Regenerate
-                            </button>
-                            <button type="button" class="button-link hmg-ai-insert-shortcode" data-type="${type}">
-                                Insert Shortcode
-                            </button>
-                        </div>
                     </div>
                     <div class="hmg-ai-content-preview" id="${type}-preview">
                         ${this.formatPreview(data.content)}
                     </div>
+                    <div class="hmg-ai-content-actions">
+                        <button type="button" class="button-link hmg-ai-edit-content" data-type="${type}" data-post-id="${postId}" title="Edit">
+                            <span class="dashicons dashicons-edit"></span>
+                        </button>
+                        <button type="button" class="button-link hmg-ai-regenerate" data-type="${type}" data-post-id="${postId}" title="Regenerate">
+                            <span class="dashicons dashicons-update"></span>
+                        </button>
+                        <button type="button" class="button-link hmg-ai-insert-shortcode" data-type="${type}" title="Insert Shortcode">
+                            <span class="dashicons dashicons-shortcode"></span>
+                        </button>
+                        <button type="button" class="button-link hmg-ai-delete-content" data-type="${type}" data-post-id="${postId}" title="Delete" style="color: #d63638;">
+                            <span class="dashicons dashicons-trash"></span>
+                        </button>
+                    </div>
+                    <div class="hmg-ai-content-notice" id="${type}-notice"></div>
                     <div class="hmg-ai-content-editor" id="${type}-editor" style="display: none;">
                         <textarea rows="6" style="width: 100%;" id="${type}-content">${data.content}</textarea>
                         <div class="hmg-ai-editor-actions">
@@ -307,14 +479,14 @@
             if (typeof content === 'object') {
                 // Handle array or object data
                 if (Array.isArray(content)) {
-                    return content.slice(0, 3).join('<br>') + '...';
+                    return content.slice(0, 2).join('<br>') + '...';
                 } else {
-                    return JSON.stringify(content).substring(0, 150) + '...';
+                    return JSON.stringify(content).substring(0, 100) + '...';
                 }
             }
             // Handle string content
             const stripped = content.replace(/<[^>]*>/g, '');
-            return stripped.substring(0, 150) + '...';
+            return stripped.substring(0, 100) + '...';
         },
 
         /**
@@ -345,7 +517,17 @@
             const $button = $(e.currentTarget);
             const type = $button.data('type');
             const postId = $button.data('post-id');
-            const content = $(`#${type}-content`).val();
+            const $textarea = $(`#${type}-content`);
+            const content = $textarea.val();
+            
+            // Debug logging
+            console.log('Saving content:', {
+                type: type,
+                postId: postId,
+                content: content,
+                contentLength: content ? content.length : 0,
+                textarea: $textarea.length
+            });
 
             $button.prop('disabled', true).text('Saving...');
 
@@ -361,16 +543,21 @@
                 },
                 success: (response) => {
                     if (response.success) {
-                        this.showNotice('Content saved successfully!', 'success');
+                        this.showNotice('Content saved successfully!', 'success', type);
                         $(`#${type}-preview`).html(this.formatPreview(content));
                         $(`#${type}-editor`).hide();
                         $(`#${type}-preview`).show();
                     } else {
-                        this.showNotice('Failed to save content. Please try again.', 'error');
+                        // Show actual error message from server
+                        const errorMsg = response.data && response.data.message ? response.data.message : 'Failed to save content. Please try again.';
+                        this.showNotice(errorMsg, 'error', type);
+                        console.error('Save error:', response);
                     }
                 },
-                error: () => {
-                    this.showNotice('An error occurred while saving. Please try again.', 'error');
+                error: (xhr, status, error) => {
+                    console.error('AJAX error:', status, error);
+                    console.error('Response:', xhr.responseText);
+                    this.showNotice('An error occurred while saving. Please check console for details.', 'error', type);
                 },
                 complete: () => {
                     $button.prop('disabled', false).text('Save');
@@ -383,12 +570,47 @@
          */
         regenerateContent: function(e) {
             e.preventDefault();
-            const type = $(e.currentTarget).data('type');
-            const postId = $(e.currentTarget).data('post-id');
+            const $button = $(e.currentTarget);
+            const type = $button.data('type');
+            const postId = $button.data('post-id');
+            const $icon = $button.find('.dashicons');
             
-            if (confirm('Are you sure you want to regenerate this content? The current version will be replaced.')) {
-                $(`.hmg-ai-generate-${type}`).click();
-            }
+            // Format type for display
+            const displayType = type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ');
+            
+            this.showModal(
+                `Regenerate ${displayType}?`,
+                `<p>Are you sure you want to regenerate this content?</p>
+                 <p><strong>Warning:</strong> The current version will be replaced with new AI-generated content.</p>`,
+                () => {
+                    // Add spinning animation to the icon
+                    $icon.addClass('hmg-ai-spinning');
+                    $button.prop('disabled', true);
+                    
+                    // Trigger the generation
+                    const $generateBtn = $(`.hmg-ai-generate-${type}`);
+                    $generateBtn.click();
+                    
+                    // Watch for completion
+                    const checkInterval = setInterval(() => {
+                        // Check if generation is complete (button is re-enabled or loading state is gone)
+                        if (!$generateBtn.hasClass('loading') && !$generateBtn.prop('disabled')) {
+                            $icon.removeClass('hmg-ai-spinning');
+                            $button.prop('disabled', false);
+                            clearInterval(checkInterval);
+                        }
+                    }, 500);
+                    
+                    // Fallback timeout to remove spinning after 30 seconds
+                    setTimeout(() => {
+                        $icon.removeClass('hmg-ai-spinning');
+                        $button.prop('disabled', false);
+                        clearInterval(checkInterval);
+                    }, 30000);
+                },
+                'Regenerate',
+                'button-primary'
+            );
         },
 
         /**
@@ -396,25 +618,72 @@
          */
         insertShortcode: function(e) {
             e.preventDefault();
-            const type = $(e.currentTarget).data('type');
+            e.stopPropagation(); // Prevent event bubbling
+            
+            const $button = $(e.currentTarget);
+            
+            // Prevent double clicks
+            if ($button.hasClass('processing')) {
+                return;
+            }
+            
+            $button.addClass('processing');
+            
+            const type = $button.data('type');
             const shortcode = `[hmg_ai_${type}]`;
             
-            if (typeof wp !== 'undefined' && wp.data) {
+            if (typeof wp !== 'undefined' && wp.data && wp.data.select('core/editor')) {
                 // Gutenberg editor
-                const currentContent = wp.data.select('core/editor').getEditedPostContent();
-                wp.data.dispatch('core/editor').editPost({
-                    content: currentContent + '\n\n' + shortcode
-                });
-                this.showNotice('Shortcode added to editor!', 'success');
+                try {
+                    // Try block editor first (Gutenberg)
+                    if (wp.data.select('core/block-editor')) {
+                        const selectedBlock = wp.data.select('core/block-editor').getSelectedBlock();
+                        
+                        if (selectedBlock) {
+                            // Insert after selected block
+                            const selectedBlockIndex = wp.data.select('core/block-editor').getBlockIndex(selectedBlock.clientId);
+                            const shortcodeBlock = wp.blocks.createBlock('core/paragraph', {
+                                content: shortcode
+                            });
+                            wp.data.dispatch('core/block-editor').insertBlock(shortcodeBlock, selectedBlockIndex + 1);
+                        } else {
+                            // Append to end using block
+                            const shortcodeBlock = wp.blocks.createBlock('core/paragraph', {
+                                content: shortcode
+                            });
+                            wp.data.dispatch('core/block-editor').insertBlock(shortcodeBlock);
+                        }
+                    } else {
+                        // Fallback to classic content edit
+                        const currentContent = wp.data.select('core/editor').getEditedPostContent();
+                        wp.data.dispatch('core/editor').editPost({
+                            content: currentContent + '\n\n' + shortcode
+                        });
+                    }
+                    this.showNotice('Shortcode added to editor!', 'success', type);
+                } catch (error) {
+                    console.error('Error inserting shortcode:', error);
+                    // Fallback method
+                    const currentContent = wp.data.select('core/editor').getEditedPostContent();
+                    wp.data.dispatch('core/editor').editPost({
+                        content: currentContent + '\n\n' + shortcode
+                    });
+                    this.showNotice('Shortcode added to editor!', 'success', type);
+                }
             } else if (typeof tinymce !== 'undefined' && tinymce.activeEditor) {
                 // Classic editor with TinyMCE
                 tinymce.activeEditor.execCommand('mceInsertContent', false, shortcode);
-                this.showNotice('Shortcode inserted!', 'success');
+                this.showNotice('Shortcode inserted!', 'success', type);
             } else {
                 // Fallback: copy to clipboard
                 this.copyToClipboard(shortcode);
-                this.showNotice('Shortcode copied to clipboard!', 'success');
+                this.showNotice('Shortcode copied to clipboard!', 'success', type);
             }
+            
+            // Remove processing class after a delay
+            setTimeout(() => {
+                $button.removeClass('processing');
+            }, 500);
         },
 
         /**
@@ -426,6 +695,85 @@
             $temp.val(text).select();
             document.execCommand('copy');
             $temp.remove();
+        },
+
+        /**
+         * Delete generated content
+         */
+        deleteContent: function(e) {
+            e.preventDefault();
+            e.stopPropagation(); // Prevent event bubbling
+            
+            const $button = $(e.currentTarget);
+            
+            // Prevent multiple clicks
+            if ($button.hasClass('processing')) {
+                return;
+            }
+            
+            const type = $button.data('type');
+            const postId = $button.data('post-id');
+            
+            $button.addClass('processing');
+            
+            // Format type for display
+            const displayType = type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ');
+            
+            this.showModal(
+                `Delete ${displayType}?`,
+                `<p>Are you sure you want to delete the generated ${displayType.toLowerCase()}?</p>
+                 <p><strong>Warning:</strong> This action cannot be undone.</p>`,
+                () => {
+                    const originalText = $button.html();
+                    const $icon = $button.find('.dashicons');
+                    
+                    // Add spinning animation
+                    $icon.addClass('hmg-ai-spinning');
+                    $button.prop('disabled', true);
+                    
+                    $.ajax({
+                        url: hmg_ai_ajax.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'hmg_delete_content',
+                        nonce: hmg_ai_ajax.nonce,
+                        type: type,
+                        post_id: postId
+                    },
+                        success: (response) => {
+                            $icon.removeClass('hmg-ai-spinning');
+                            $button.prop('disabled', false).html(originalText);
+                            
+                            if (response.success) {
+                                this.showNotice(`${this.capitalizeFirst(type)} deleted successfully!`, 'success', type);
+                                // Remove the content item from display
+                                $button.closest('.hmg-ai-content-item').fadeOut(400, function() {
+                                    $(this).remove();
+                                    // Check if there are any content items left
+                                    if ($('.hmg-ai-content-item').length === 0) {
+                                        $('.hmg-ai-generated-content').remove();
+                                    }
+                                });
+                            } else {
+                                this.showNotice(response.data || 'Failed to delete content.', 'error', type);
+                                $button.removeClass('processing');
+                            }
+                        },
+                        error: (xhr, status, error) => {
+                            console.error('Delete error:', error);
+                            $icon.removeClass('hmg-ai-spinning');
+                            $button.prop('disabled', false).html(originalText);
+                            this.showNotice('An error occurred. Please try again.', 'error', type);
+                            $button.removeClass('processing');
+                        }
+                    });
+                },
+                'Delete',
+                'button-danger'
+            );
+            
+            // Remove processing flag if modal was cancelled
+            $button.removeClass('processing');
         },
 
         /**
@@ -579,30 +927,105 @@
         /**
          * Show notice message
          */
-        showNotice: function(message, type = 'info') {
-            const $notices = $('.hmg-ai-notices');
-            const noticeClass = type === 'error' ? 'notice-error' : 
-                               type === 'success' ? 'notice-success' : 
-                               type === 'warning' ? 'notice-warning' : 'notice-info';
+        showNotice: function(message, type = 'info', contentType = null) {
+            // Use modal for success messages
+            if (type === 'success') {
+                const icon = '<span class="dashicons dashicons-yes-alt" style="color: #00a32a; font-size: 48px; display: inline-block; line-height: 1;"></span>';
+                const modalMessage = `
+                    <div style="text-align: center;">
+                        ${icon}
+                        <p style="margin-top: 25px; font-size: 16px; color: #333;">${message}</p>
+                    </div>
+                `;
+                
+                // Add success class to modal
+                const $modal = $('#hmg-ai-modal');
+                $modal.addClass('hmg-ai-modal-success');
+                
+                this.showModal(
+                    'Success!',
+                    modalMessage,
+                    null,
+                    'Great!',
+                    'button-primary'
+                );
+                
+                // Play success sound (optional)
+                this.playSuccessSound();
+                
+                // Auto-close modal after 2.5 seconds for success messages
+                setTimeout(() => {
+                    this.hideModal();
+                    $modal.removeClass('hmg-ai-modal-success');
+                }, 2500);
+                
+                return;
+            }
             
-            const html = `
-                <div class="notice ${noticeClass} is-dismissible">
+            // Use modal for error messages
+            if (type === 'error') {
+                const icon = '<span class="dashicons dashicons-warning" style="color: #d63638; font-size: 48px; display: inline-block; line-height: 1;"></span>';
+                const modalMessage = `
+                    <div style="text-align: center;">
+                        ${icon}
+                        <p style="margin-top: 25px; font-size: 16px; color: #333;">${message}</p>
+                    </div>
+                `;
+                
+                // Add error class to modal
+                const $modal = $('#hmg-ai-modal');
+                $modal.addClass('hmg-ai-modal-error');
+                
+                this.showModal(
+                    'Error',
+                    modalMessage,
+                    null,
+                    'OK',
+                    'button'
+                );
+                
+                // Remove error class after modal closes
+                setTimeout(() => {
+                    $modal.removeClass('hmg-ai-modal-error');
+                }, 5000);
+                
+                return;
+            }
+            
+            // For warnings and info, use inline notices (less intrusive)
+            const $notices = contentType ? $(`#${contentType}-notice`) : $('.hmg-ai-notices');
+            
+            if (contentType && $notices.length === 0) {
+                // Fallback to modal for missing containers
+                this.showNotice(message, type);
+                return;
+            }
+            
+            const noticeClass = type === 'warning' ? 'notice-warning' : 'notice-info';
+            
+            // Different HTML based on whether it's a content-specific or global notice
+            const html = contentType ? 
+                `<div class="hmg-ai-inline-notice ${noticeClass}">
+                    <span class="dashicons dashicons-${type === 'warning' ? 'warning' : 'info'}"></span>
+                    <span>${message}</span>
+                </div>` :
+                `<div class="notice ${noticeClass} is-dismissible">
                     <p>${message}</p>
                     <button type="button" class="notice-dismiss">
                         <span class="screen-reader-text">Dismiss this notice.</span>
                     </button>
-                </div>
-            `;
+                </div>`;
             
             $notices.html(html);
             
-            // Auto-dismiss after 5 seconds for success messages
-            if (type === 'success') {
+            // Auto-dismiss warnings/info after appropriate time
+            const dismissTime = contentType ? 3000 : 5000;
+            if (type === 'warning' || contentType) {
                 setTimeout(() => {
-                    $notices.find('.notice').fadeOut(() => {
+                    $notices.find(contentType ? '.hmg-ai-inline-notice' : '.notice').fadeOut(() => {
                         $notices.empty();
                     });
-                }, 5000);
+                }, dismissTime);
             }
             
             // Handle dismiss button
@@ -619,6 +1042,40 @@
         hideNotices: function() {
             $('.hmg-ai-notices').empty();
         },
+        
+        /**
+         * Play success sound using Web Audio API
+         */
+        playSuccessSound: function() {
+            try {
+                // Create audio context
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Create oscillator for beep sound
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Set frequency for pleasant beep (two-tone success)
+                oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.1);
+                oscillator.type = 'sine';
+                
+                // Set volume envelope
+                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                
+                // Play the sound
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            } catch (e) {
+                // Silently fail if Web Audio API is not supported
+                console.log('Success sound not supported');
+            }
+        },
 
         /**
          * Capitalize first letter
@@ -633,4 +1090,4 @@
         HMGAIAdmin.init();
     });
 
-})(jQuery);
+})(jQuery); 

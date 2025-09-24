@@ -25,7 +25,6 @@ $unique_id = 'hmg-faq-' . $post_id . '-' . wp_rand(1000, 9999);
 
 <div class="hmg-ai-faq hmg-ai-faq-<?php echo esc_attr($style); ?>" data-post-id="<?php echo esc_attr($post_id); ?>">
     <h3 class="hmg-ai-faq-title">
-        <span class="hmg-ai-icon">❓</span>
         <?php _e('Frequently Asked Questions', 'hmg-ai-blog-enhancer'); ?>
     </h3>
     
@@ -74,22 +73,17 @@ $unique_id = 'hmg-faq-' . $post_id . '-' . wp_rand(1000, 9999);
             <?php foreach ($faq_data as $item): ?>
                 <div class="hmg-ai-faq-item">
                     <h4 class="hmg-ai-faq-question">
-                        <span class="hmg-ai-faq-q">Q:</span>
+                        <strong>Q:</strong>
                         <?php echo esc_html($item['question']); ?>
                     </h4>
                     <div class="hmg-ai-faq-answer">
-                        <span class="hmg-ai-faq-a">A:</span>
+                        <strong>A:</strong>
                         <?php echo wp_kses_post($item['answer']); ?>
                     </div>
                 </div>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
-    
-    <div class="hmg-ai-powered-by">
-        <small><?php _e('AI-Powered Content by', 'hmg-ai-blog-enhancer'); ?> 
-        <a href="https://haleymarketing.com" target="_blank" rel="noopener">Haley Marketing</a></small>
-    </div>
 </div>
 
 <?php if ($style === 'accordion'): ?>
