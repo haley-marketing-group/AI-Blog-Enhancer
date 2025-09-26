@@ -15,6 +15,7 @@
      * Main admin controller
      */
     const HMGAIAdmin = {
+        modalTimeout: null, // Store timeout ID for auto-close
         
         /**
          * Initialize the admin interface
@@ -40,10 +41,12 @@
                                 <span class="dashicons dashicons-no"></span>
                             </button>
                         </div>
-                        <div class="hmg-ai-modal-body"></div>
+                        <div class="hmg-ai-modal-body">
+                            <p class="hmg-ai-modal-message"></p>
+                        </div>
                         <div class="hmg-ai-modal-footer">
-                            <button class="button hmg-ai-modal-cancel">Cancel</button>
                             <button class="button button-primary hmg-ai-modal-confirm">Confirm</button>
+                            <button class="button hmg-ai-modal-cancel">Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -53,34 +56,9 @@
             if (!$('#hmg-ai-modal').length) {
                 $('body').append(modalHTML);
             }
-        },
-        
-        /**
-         * Show custom modal
-         */
-        showModal: function(title, message, onConfirm, confirmText = 'Confirm', confirmClass = 'button-primary') {
+            
+            // Bind modal events
             const $modal = $('#hmg-ai-modal');
-            $modal.find('.hmg-ai-modal-title').text(title);
-            $modal.find('.hmg-ai-modal-body').html(message);
-            
-            const $confirmBtn = $modal.find('.hmg-ai-modal-confirm');
-            $confirmBtn.text(confirmText).removeClass('button-primary button-danger').addClass(confirmClass);
-            
-            // Fade in with animation
-            $modal.fadeIn(200).addClass('show');
-            
-            // Remove any existing handlers
-            $modal.find('.hmg-ai-modal-confirm').off('click');
-            $modal.find('.hmg-ai-modal-cancel').off('click');
-            $modal.find('.hmg-ai-modal-close').off('click');
-            $modal.find('.hmg-ai-modal-overlay').off('click');
-            
-            // Bind new handlers
-            $modal.find('.hmg-ai-modal-confirm').on('click', () => {
-                this.hideModal();
-                if (onConfirm) onConfirm();
-            });
-            
             $modal.find('.hmg-ai-modal-cancel, .hmg-ai-modal-close, .hmg-ai-modal-overlay').on('click', () => {
                 this.hideModal();
             });
@@ -94,9 +72,55 @@
         },
         
         /**
+         * Show custom modal
+         */
+        showModal: function(title, message, onConfirm, confirmText = 'Confirm', confirmClass = 'button-primary') {
+            const $modal = $('#hmg-ai-modal');
+            const $confirmBtn = $modal.find('.hmg-ai-modal-confirm');
+            const $cancelBtn = $modal.find('.hmg-ai-modal-cancel');
+            
+            // Set content
+            $modal.find('.hmg-ai-modal-title').text(title);
+            $modal.find('.hmg-ai-modal-message').html(message);
+            $confirmBtn.text(confirmText);
+            $confirmBtn.attr('class', 'button ' + confirmClass);
+            
+            // Hide cancel for informational modals
+            if (onConfirm === null) {
+                $cancelBtn.hide();
+            } else {
+                $cancelBtn.show();
+            }
+            
+            // Clear previous handlers
+            $confirmBtn.off('click.modalConfirm');
+            
+            // Set new confirm handler
+            if (onConfirm) {
+                $confirmBtn.on('click.modalConfirm', () => {
+                    this.hideModal();
+                    onConfirm();
+                });
+            } else {
+                $confirmBtn.on('click.modalConfirm', () => {
+                    this.hideModal();
+                });
+            }
+            
+            // Show modal
+            $modal.addClass('show').fadeIn(200);
+        },
+        
+        /**
          * Hide custom modal
          */
         hideModal: function() {
+            // Clear any auto-close timeout if it exists
+            if (this.modalTimeout) {
+                clearTimeout(this.modalTimeout);
+                this.modalTimeout = null;
+            }
+            
             const $modal = $('#hmg-ai-modal');
             $modal.fadeOut(200, () => {
                 $modal.removeClass('show hmg-ai-modal-success hmg-ai-modal-error');
@@ -108,6 +132,7 @@
          * Bind all event handlers
          */
         bindEvents: function() {
+
             // Content generation buttons - use namespaced events to prevent double binding
             $(document).off('click.hmgai-takeaways').on('click.hmgai-takeaways', '.hmg-ai-generate-takeaways', this.generateTakeaways.bind(this));
             $(document).off('click.hmgai-faq').on('click.hmgai-faq', '.hmg-ai-generate-faq', this.generateFAQ.bind(this));
@@ -128,12 +153,140 @@
             // Settings page interactions
             $('input[name="spending_limit_type"]').on('change', this.toggleCustomLimit);
             
+            // Refresh voices button (both meta box and settings page)
+
+            $(document).off('click.hmgai-refresh-voices').on('click.hmgai-refresh-voices', '#hmg-ai-refresh-voices, #hmg-ai-refresh-settings-voices', this.refreshVoices.bind(this));
+            
+            // Verify buttons exist
+            if ($('#hmg-ai-refresh-voices').length > 0) {
+
+            }
+            if ($('#hmg-ai-refresh-settings-voices').length > 0) {
+
+            }
+            
             // Refresh usage stats every 30 seconds if on editor page
             if ($('.hmg-ai-meta-box').length > 0) {
                 setInterval(this.refreshUsageStats.bind(this), 30000);
             }
         },
 
+        /**
+         * Refresh Eleven Labs voices from API
+         */
+        refreshVoices: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Check if hmg_ai_ajax is defined
+            if (typeof hmg_ai_ajax === 'undefined') {
+
+                alert('Configuration error. Please refresh the page.');
+                return;
+            }
+            
+            const $button = $(e.currentTarget);
+
+            // Get the correct select element based on which page we're on
+            let $select = $('#hmg-ai-audio-voice'); // Meta box select
+            if ($select.length === 0) {
+                $select = $('#tts_voice'); // Settings page select
+            }
+            
+            if ($select.length === 0) {
+
+                this.showNotice('error', 'Unable to find voice selection dropdown');
+                return;
+            }
+            
+            const $icon = $button.find('.dashicons');
+            const currentValue = $select.val();
+            
+            // Add spinning animation
+            $icon.addClass('hmg-ai-spinning');
+            $button.prop('disabled', true);
+
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'hmg_ai_refresh_voices',
+                    nonce: hmg_ai_ajax.nonce
+                },
+                success: (response) => {
+
+                    if (response.success && response.data && response.data.voices) {
+                        // Clear current options
+                        $select.empty();
+                        
+                        // Separate voices by category
+                        const premadeVoices = [];
+                        const clonedVoices = [];
+                        
+                        Object.entries(response.data.voices).forEach(([voiceId, voiceData]) => {
+                            const category = voiceData.category || 'premade';
+                            const voice = {
+                                id: voiceId,
+                                name: voiceData.name,
+                                description: voiceData.description || ''
+                            };
+                            
+                            if (category === 'cloned') {
+                                clonedVoices.push(voice);
+                            } else {
+                                premadeVoices.push(voice);
+                            }
+                        });
+                        
+                        // Add premade voices
+                        if (premadeVoices.length > 0) {
+                            const $optgroup = $('<optgroup label="Eleven Labs Voices"></optgroup>');
+                            premadeVoices.forEach(voice => {
+                                const text = voice.description ? 
+                                    `${voice.name} - ${voice.description}` : 
+                                    voice.name;
+                                $optgroup.append(`<option value="${voice.id}">${text}</option>`);
+                            });
+                            $select.append($optgroup);
+                        }
+                        
+                        // Add cloned voices if any
+                        if (clonedVoices.length > 0) {
+                            const $optgroup = $('<optgroup label="Custom/Cloned Voices"></optgroup>');
+                            clonedVoices.forEach(voice => {
+                                const text = voice.description ? 
+                                    `${voice.name} - ${voice.description}` : 
+                                    voice.name;
+                                $optgroup.append(`<option value="${voice.id}">${text}</option>`);
+                            });
+                            $select.append($optgroup);
+                        }
+                        
+                        // Restore previous selection if it exists
+                        if (currentValue && $select.find(`option[value="${currentValue}"]`).length > 0) {
+                            $select.val(currentValue);
+                        }
+                        
+                        this.showNotice('success', response.data.message || 'Voices refreshed successfully!');
+                    } else {
+
+                        const errorMsg = (response.data && response.data.message) ? response.data.message : 'Failed to refresh voices';
+                        this.showNotice('error', errorMsg);
+                    }
+                },
+                error: () => {
+
+                    this.showNotice('error', 'Failed to refresh voices. Please check your API key and network connection.');
+                },
+                complete: () => {
+                    // Always remove spinning and re-enable button
+                    $icon.removeClass('hmg-ai-spinning');
+                    $button.prop('disabled', false);
+                },
+                timeout: 30000 // 30 second timeout
+            });
+        },
+        
         /**
          * Initialize usage bar animations
          */
@@ -289,7 +442,7 @@
                     }
                 },
                 error: (xhr, status, error) => {
-                    console.error('Audio generation error:', error);
+
                     this.showNotice('An error occurred while generating audio. Please try again.', 'error');
                 },
                 complete: () => {
@@ -316,7 +469,7 @@
                         <div class="hmg-ai-audio-info">
                             <span class="hmg-ai-audio-duration">Duration: ${data.duration ? data.duration.formatted : 'Unknown'}</span>
                             <span class="hmg-ai-separator">•</span>
-                            <span class="hmg-ai-audio-voice">Voice: ${data.voice || 'Default'}</span>
+                            <span class="hmg-ai-audio-voice">Voice: ${data.voice || 'Eleven Labs'}</span>
                         </div>
                     </div>
                     <div class="hmg-ai-content-actions">
@@ -370,23 +523,28 @@
                     post_id: postId
                 },
                 success: (response) => {
-                    console.log('Generation response:', response);
+
                     if (response.success) {
                         this.showNotice(`${this.capitalizeFirst(type)} generated successfully!`, 'success');
                         this.updateGeneratedContent(type, response.data, postId);
                         // Usage data is in response.data.usage
                         if (response.data && response.data.usage) {
-                            console.log('Found usage data in response:', response.data.usage);
+
                             this.updateUsageStats(response.data.usage);
                         } else {
-                            console.log('No usage data in response');
+
                         }
                     } else {
-                        this.showNotice(response.data || 'Generation failed. Please try again.', 'error');
+                        const errorMsg = (response.data && response.data.message) ? 
+                            response.data.message : 
+                            (response.data && typeof response.data === 'string') ? 
+                            response.data : 
+                            'Generation failed. Please try again.';
+                        this.showNotice(errorMsg, 'error');
                     }
                 },
                 error: (xhr, status, error) => {
-                    console.error('Generation error:', error);
+
                     this.showNotice('An error occurred. Please check your connection and try again.', 'error');
                 },
                 complete: () => {
@@ -521,13 +679,6 @@
             const content = $textarea.val();
             
             // Debug logging
-            console.log('Saving content:', {
-                type: type,
-                postId: postId,
-                content: content,
-                contentLength: content ? content.length : 0,
-                textarea: $textarea.length
-            });
 
             $button.prop('disabled', true).text('Saving...');
 
@@ -551,12 +702,11 @@
                         // Show actual error message from server
                         const errorMsg = response.data && response.data.message ? response.data.message : 'Failed to save content. Please try again.';
                         this.showNotice(errorMsg, 'error', type);
-                        console.error('Save error:', response);
+
                     }
                 },
                 error: (xhr, status, error) => {
-                    console.error('AJAX error:', status, error);
-                    console.error('Response:', xhr.responseText);
+
                     this.showNotice('An error occurred while saving. Please check console for details.', 'error', type);
                 },
                 complete: () => {
@@ -662,7 +812,7 @@
                     }
                     this.showNotice('Shortcode added to editor!', 'success', type);
                 } catch (error) {
-                    console.error('Error inserting shortcode:', error);
+
                     // Fallback method
                     const currentContent = wp.data.select('core/editor').getEditedPostContent();
                     wp.data.dispatch('core/editor').editPost({
@@ -755,12 +905,15 @@
                                     }
                                 });
                             } else {
-                                this.showNotice(response.data || 'Failed to delete content.', 'error', type);
+                                const errorMsg = (response.data && response.data.message) ? 
+                                    response.data.message : 
+                                    'Failed to delete content.';
+                                this.showNotice(errorMsg, 'error', type);
                                 $button.removeClass('processing');
                             }
                         },
                         error: (xhr, status, error) => {
-                            console.error('Delete error:', error);
+
                             $icon.removeClass('hmg-ai-spinning');
                             $button.prop('disabled', false).html(originalText);
                             this.showNotice('An error occurred. Please try again.', 'error', type);
@@ -841,11 +994,9 @@
          */
         updateUsageStats: function(usage) {
             if (!usage) {
-                console.log('No usage data provided to updateUsageStats');
+
                 return;
             }
-            
-            console.log('Updating usage stats:', usage);
 
             if (usage.spending) {
                 // Format spending with appropriate decimal places
@@ -928,6 +1079,23 @@
          * Show notice message
          */
         showNotice: function(message, type = 'info', contentType = null) {
+            // Ensure message is a string
+            if (typeof message === 'object' && message !== null) {
+                // Try to extract the actual message from the object
+                if (message.message) {
+                    message = message.message;
+                } else if (message.error) {
+                    message = message.error;
+                } else if (message.data && message.data.message) {
+                    message = message.data.message;
+                } else {
+                    // Fallback to stringify if we can't find a message property
+                    message = JSON.stringify(message);
+                }
+            }
+            
+            // Convert to string if still not a string
+            message = String(message || 'An error occurred');
             // Use modal for success messages
             if (type === 'success') {
                 const icon = '<span class="dashicons dashicons-yes-alt" style="color: #00a32a; font-size: 48px; display: inline-block; line-height: 1;"></span>';
@@ -954,7 +1122,7 @@
                 this.playSuccessSound();
                 
                 // Auto-close modal after 2.5 seconds for success messages
-                setTimeout(() => {
+                this.modalTimeout = setTimeout(() => {
                     this.hideModal();
                     $modal.removeClass('hmg-ai-modal-success');
                 }, 2500);
@@ -984,8 +1152,8 @@
                     'button'
                 );
                 
-                // Remove error class after modal closes
-                setTimeout(() => {
+                // Remove error class after 5 seconds (but don't auto-close)
+                this.modalTimeout = setTimeout(() => {
                     $modal.removeClass('hmg-ai-modal-error');
                 }, 5000);
                 
@@ -1073,7 +1241,7 @@
                 oscillator.stop(audioContext.currentTime + 0.2);
             } catch (e) {
                 // Silently fail if Web Audio API is not supported
-                console.log('Success sound not supported');
+
             }
         },
 
@@ -1087,6 +1255,7 @@
 
     // Initialize when document is ready
     $(document).ready(function() {
+
         HMGAIAdmin.init();
     });
 

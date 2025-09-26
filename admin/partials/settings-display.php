@@ -49,7 +49,15 @@ if (isset($_POST['submit']) && wp_verify_nonce($_POST['hmg_ai_settings_nonce'], 
     $new_options['claude_api_key'] = sanitize_text_field($_POST['claude_api_key'] ?? '');
     
     // TTS settings (Eleven Labs)
-    update_option('hmg_ai_elevenlabs_api_key', sanitize_text_field($_POST['elevenlabs_api_key'] ?? ''));
+    $new_elevenlabs_key = sanitize_text_field($_POST['elevenlabs_api_key'] ?? '');
+    $old_elevenlabs_key = get_option('hmg_ai_elevenlabs_api_key');
+    update_option('hmg_ai_elevenlabs_api_key', $new_elevenlabs_key);
+    
+    // Clear voice cache if API key changed
+    if ($new_elevenlabs_key !== $old_elevenlabs_key && class_exists('HMG_AI_TTS_Service')) {
+        $tts_service = new HMG_AI_TTS_Service();
+        $tts_service->clear_voice_cache();
+    }
     update_option('hmg_ai_tts_voice', sanitize_text_field($_POST['tts_voice'] ?? 'EXAVITQu4vr4xnSDxMaL'));
     update_option('hmg_ai_tts_stability', floatval($_POST['tts_stability'] ?? 0.5));
     update_option('hmg_ai_tts_similarity', floatval($_POST['tts_similarity'] ?? 0.75));
@@ -475,26 +483,86 @@ if (isset($_POST['submit']) && wp_verify_nonce($_POST['hmg_ai_settings_nonce'], 
                     </div>
                     
                     <div class="hmg-ai-form-group">
-                        <label for="tts_voice"><?php _e('Select Voice', 'hmg-ai-blog-enhancer'); ?></label>
+                        <label for="tts_voice">
+                            <?php _e('Select Voice', 'hmg-ai-blog-enhancer'); ?>
+                            <button type="button" id="hmg-ai-refresh-settings-voices" class="button button-small" style="margin-left: 10px; display: inline-flex; align-items: center; gap: 4px;">
+                                <span class="dashicons dashicons-update" style="font-size: 14px; line-height: 1; vertical-align: middle;"></span>
+                                <span style="line-height: 1;"><?php _e('Refresh Voices', 'hmg-ai-blog-enhancer'); ?></span>
+                            </button>
+                        </label>
                         <select id="tts_voice" name="tts_voice" style="width: 100%; max-width: 450px;">
                             <?php
                             $selected_voice = get_option('hmg_ai_tts_voice', 'EXAVITQu4vr4xnSDxMaL');
-                            $voices = array(
-                                'EXAVITQu4vr4xnSDxMaL' => 'Sarah - Professional Female (Warm & Clear)',
-                                '21m00Tcm4TlvDq8ikWAM' => 'Rachel - News Narrator (Professional)',
-                                'JBFqnCBsd6RMkjVDRZzb' => 'George - Professional Male (Clear)',
-                                'pNInz6obpgDQGcFmaJgB' => 'Adam - Conversational Male (Natural)',
-                                '2EiwWnXFnvU5JabPnv8n' => 'Clyde - Deep Male (Authoritative)',
-                                'TX3LPaxmHKxFdv7VOQHJ' => 'Liam - Storyteller (Engaging)',
-                                'ThT5KcBeYPX3keUQqHPh' => 'Dorothy - British Female (Professional)',
-                                'IKne3meq5aSn9XLyUdCD' => 'Charlie - Australian Male (Friendly)'
-                            );
-                            foreach ($voices as $id => $name) {
-                                echo '<option value="' . esc_attr($id) . '" ' . selected($selected_voice, $id, false) . '>' . esc_html($name) . '</option>';
+                            
+                            // Get TTS service to fetch available voices
+                            if (class_exists('HMG_AI_TTS_Service')) {
+                                $tts_service = new HMG_AI_TTS_Service();
+                                $voices = $tts_service->get_available_voices();
+                                
+                                if (!empty($voices)) {
+                                    // Group voices by category
+                                    $premade_voices = array();
+                                    $cloned_voices = array();
+                                    
+                                    foreach ($voices as $voice_id => $voice_data) {
+                                        $category = isset($voice_data['category']) ? $voice_data['category'] : 'premade';
+                                        if ($category === 'cloned') {
+                                            $cloned_voices[$voice_id] = $voice_data;
+                                        } else {
+                                            $premade_voices[$voice_id] = $voice_data;
+                                        }
+                                    }
+                                    
+                                    // Display premade voices
+                                    if (!empty($premade_voices)) {
+                                        echo '<optgroup label="' . esc_attr__('Eleven Labs Voices', 'hmg-ai-blog-enhancer') . '">';
+                                        foreach ($premade_voices as $voice_id => $voice_data) {
+                                            $selected = selected($selected_voice, $voice_id, false);
+                                            $name = esc_html($voice_data['name']);
+                                            $description = isset($voice_data['description']) ? ' - ' . esc_html($voice_data['description']) : '';
+                                            echo '<option value="' . esc_attr($voice_id) . '" ' . $selected . '>' . $name . $description . '</option>';
+                                        }
+                                        echo '</optgroup>';
+                                    }
+                                    
+                                    // Display cloned voices
+                                    if (!empty($cloned_voices)) {
+                                        echo '<optgroup label="' . esc_attr__('Custom/Cloned Voices', 'hmg-ai-blog-enhancer') . '">';
+                                        foreach ($cloned_voices as $voice_id => $voice_data) {
+                                            $selected = selected($selected_voice, $voice_id, false);
+                                            $name = esc_html($voice_data['name']);
+                                            $description = isset($voice_data['description']) ? ' - ' . esc_html($voice_data['description']) : '';
+                                            echo '<option value="' . esc_attr($voice_id) . '" ' . $selected . '>' . $name . $description . '</option>';
+                                        }
+                                        echo '</optgroup>';
+                                    }
+                                } else {
+                                    // Fallback voices
+                                    $fallback_voices = array(
+                                        'EXAVITQu4vr4xnSDxMaL' => 'Sarah - Professional Female',
+                                        '21m00Tcm4TlvDq8ikWAM' => 'Rachel - News Narrator',
+                                        'JBFqnCBsd6RMkjVDRZzb' => 'George - Professional Male',
+                                        'pNInz6obpgDQGcFmaJgB' => 'Adam - Conversational Male'
+                                    );
+                                    foreach ($fallback_voices as $id => $name) {
+                                        echo '<option value="' . esc_attr($id) . '" ' . selected($selected_voice, $id, false) . '>' . esc_html($name) . '</option>';
+                                    }
+                                }
+                            } else {
+                                // If TTS service not available
+                                $fallback_voices = array(
+                                    'EXAVITQu4vr4xnSDxMaL' => 'Sarah - Professional Female',
+                                    '21m00Tcm4TlvDq8ikWAM' => 'Rachel - News Narrator',
+                                    'JBFqnCBsd6RMkjVDRZzb' => 'George - Professional Male',
+                                    'pNInz6obpgDQGcFmaJgB' => 'Adam - Conversational Male'
+                                );
+                                foreach ($fallback_voices as $id => $name) {
+                                    echo '<option value="' . esc_attr($id) . '" ' . selected($selected_voice, $id, false) . '>' . esc_html($name) . '</option>';
+                                }
                             }
                             ?>
                         </select>
-                        <p class="description"><?php _e('Choose from premium Eleven Labs voices', 'hmg-ai-blog-enhancer'); ?></p>
+                        <p class="description"><?php _e('Choose from premium Eleven Labs voices. Voices are fetched from your Eleven Labs account.', 'hmg-ai-blog-enhancer'); ?></p>
                     </div>
                     
                     <div class="hmg-ai-form-group">

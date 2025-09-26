@@ -75,10 +75,27 @@ class HMG_AI_Public {
      * @since    1.0.0
      */
     public function enqueue_styles() {
-        // Skip loading CSS files since we're using inline styles now
-        // Only load dashicons if needed for audio player controls
-        if (is_singular() && has_shortcode(get_post_field('post_content', get_the_ID()), 'hmg_ai_audio')) {
-            wp_enqueue_style('dashicons');
+        // Load CSS for audio player and dashicons
+        if (is_singular()) {
+            $post_id = get_the_ID();
+            if ($post_id) {
+                $post_content = get_post_field('post_content', $post_id);
+                
+                // Check if audio shortcode is present OR if audio meta exists
+                $has_audio = has_shortcode($post_content, 'hmg_ai_audio') || 
+                            get_post_meta($post_id, '_hmg_ai_audio_url', true);
+                
+                if ($has_audio) {
+                    // Load the public CSS for audio player styles
+                    wp_enqueue_style(
+                        $this->plugin_name . '-public',
+                        HMG_AI_BLOG_ENHANCER_PLUGIN_URL . 'public/css/hmg-ai-public.css',
+                        array('dashicons'),
+                        $this->version,
+                        'all'
+                    );
+                }
+            }
         }
     }
 
@@ -514,7 +531,8 @@ class HMG_AI_Public {
             'url' => $audio_url,
             'title' => get_the_title($post_id),
             'duration' => get_post_meta($post_id, '_hmg_ai_audio_duration', true),
-            'size' => get_post_meta($post_id, '_hmg_ai_audio_size', true)
+            'size' => get_post_meta($post_id, '_hmg_ai_audio_size', true),
+            'voice' => get_post_meta($post_id, '_hmg_ai_audio_voice', true)
         );
         
         // Load template

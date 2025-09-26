@@ -174,6 +174,9 @@ class HMG_AI_Core {
         
         // Ensure meta boxes work with block editor
         $this->loader->add_action('enqueue_block_editor_assets', $plugin_admin, 'enqueue_block_editor_assets');
+        
+        // Properly enqueue styles for block editor iframe
+        $this->loader->add_action('enqueue_block_assets', $plugin_admin, 'enqueue_block_assets');
 
         // AJAX handlers for content generation
         $this->loader->add_action('wp_ajax_hmg_generate_takeaways', $plugin_admin, 'ajax_generate_takeaways');
@@ -187,6 +190,7 @@ class HMG_AI_Core {
         $this->loader->add_action('wp_ajax_hmg_test_ai_providers', $plugin_admin, 'ajax_test_ai_providers');
         $this->loader->add_action('wp_ajax_hmg_save_ai_content', $plugin_admin, 'ajax_save_ai_content');
         $this->loader->add_action('wp_ajax_hmg_delete_content', $plugin_admin, 'ajax_delete_content');
+        $this->loader->add_action('wp_ajax_hmg_ai_refresh_voices', $plugin_admin, 'ajax_refresh_voices');
 
         // Plugin action links
         $this->loader->add_filter('plugin_action_links_' . HMG_AI_BLOG_ENHANCER_PLUGIN_BASENAME, $plugin_admin, 'add_action_links');

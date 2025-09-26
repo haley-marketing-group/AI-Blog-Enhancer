@@ -121,6 +121,22 @@
     box-shadow: 0 4px 12px rgba(51, 42, 134, 0.3);
 }
 
+.hmg-ai-button:disabled,
+.hmg-ai-button[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #e0e0e0 !important;
+    color: #666 !important;
+    border-color: #ccc !important;
+    pointer-events: none;
+}
+
+.hmg-ai-button:disabled:hover,
+.hmg-ai-button[disabled]:hover {
+    transform: none;
+    box-shadow: none;
+}
+
 .hmg-ai-button.secondary {
     background: var(--hmg-lime-green);
 }
@@ -401,6 +417,18 @@
     padding: 15px;
 }
 
+/* General meta box styling */
+.hmg-ai-meta-box {
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+.hmg-ai-meta-box * {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
 /* Block editor specific meta box styling */
 .wp-block-editor .hmg-ai-meta-box {
     background: #fff;
@@ -408,6 +436,8 @@
     border-radius: 4px;
     padding: 15px;
     margin-bottom: 20px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* === GENERATED CONTENT SIDEBAR OPTIMIZED === */
@@ -729,13 +759,17 @@
 
 /* Audio Player Wrapper */
 .hmg-ai-audio-player-wrapper {
-    margin: 15px 0;
+    margin: 12px 0;
+    padding: 10px;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
 }
 
 .hmg-ai-audio-player {
     width: 100%;
     height: 40px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .hmg-ai-audio-info {
@@ -760,6 +794,15 @@
 
 .hmg-ai-separator {
     opacity: 0.5;
+}
+
+/* Audio player styles */
+
+/* Ensure audio wrapper doesn't overflow */
+.hmg-ai-audio-player-wrapper {
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 /* Spinning animation for loading */
@@ -1037,6 +1080,61 @@
 .button-danger:hover {
     background: #b32d2e !important;
     border-color: #b32d2e !important;
+}
+
+/* ==========================================================================
+   Refresh voices button styling and alignment
+   ========================================================================== */
+
+#hmg-ai-refresh-voices,
+#hmg-ai-refresh-settings-voices {
+    text-decoration: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+
+#hmg-ai-refresh-voices:hover,
+#hmg-ai-refresh-voices:focus,
+#hmg-ai-refresh-voices:active,
+#hmg-ai-refresh-settings-voices:hover,
+#hmg-ai-refresh-settings-voices:focus,
+#hmg-ai-refresh-settings-voices:active {
+    text-decoration: none !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+/* Ensure proper alignment of icon and text */
+#hmg-ai-refresh-voices .dashicons,
+#hmg-ai-refresh-settings-voices .dashicons {
+    font-size: 14px !important;
+    line-height: 1 !important;
+    width: 14px !important;
+    height: 14px !important;
+    vertical-align: middle !important;
+}
+
+#hmg-ai-refresh-voices span,
+#hmg-ai-refresh-settings-voices span {
+    line-height: 1 !important;
+}
+
+/* Disabled state */
+#hmg-ai-refresh-voices[disabled],
+#hmg-ai-refresh-settings-voices[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Ensure button is clickable */
+#hmg-ai-refresh-voices:not([disabled]),
+#hmg-ai-refresh-settings-voices:not([disabled]) {
+    cursor: pointer;
+    pointer-events: auto;
 }
 
 /* ==========================================================================

@@ -26,6 +26,18 @@ $options = get_option('hmg_ai_blog_enhancer_options', array());
 // Get authentication status
 $auth_service = new HMG_AI_Auth_Service();
 $auth_status = $auth_service->get_auth_status();
+
+// Check which API keys are configured
+// AI provider keys are stored in the options array
+$gemini_key = $options['gemini_api_key'] ?? '';
+$openai_key = $options['openai_api_key'] ?? '';
+$claude_key = $options['claude_api_key'] ?? '';
+// Eleven Labs key is stored separately
+$elevenlabs_key = get_option('hmg_ai_elevenlabs_api_key', '');
+
+// Check if any AI provider is configured for content generation
+$has_ai_provider = !empty($gemini_key) || !empty($openai_key) || !empty($claude_key);
+$has_audio_provider = !empty($elevenlabs_key);
 ?>
 
 <div class="hmg-ai-meta-box">
@@ -118,41 +130,127 @@ $auth_status = $auth_service->get_auth_status();
         <div class="hmg-ai-generation-controls">
             <h4><?php _e('Generate AI Content', 'hmg-ai-blog-enhancer'); ?></h4>
             
-            <button type="button" class="hmg-ai-button hmg-ai-generate-takeaways" data-post-id="<?php echo $post_id; ?>">
+            <button type="button" class="hmg-ai-button hmg-ai-generate-takeaways" data-post-id="<?php echo $post_id; ?>" 
+                    <?php echo !$has_ai_provider ? 'disabled' : ''; ?>
+                    title="<?php echo !$has_ai_provider ? esc_attr__('Please configure an AI API key (Gemini, OpenAI, or Claude) in Settings', 'hmg-ai-blog-enhancer') : ''; ?>">
                 <span class="dashicons dashicons-list-view"></span>
                 <?php _e('Generate Key Takeaways', 'hmg-ai-blog-enhancer'); ?>
             </button>
             
-            <button type="button" class="hmg-ai-button secondary hmg-ai-generate-faq" data-post-id="<?php echo $post_id; ?>">
+            <button type="button" class="hmg-ai-button secondary hmg-ai-generate-faq" data-post-id="<?php echo $post_id; ?>"
+                    <?php echo !$has_ai_provider ? 'disabled' : ''; ?>
+                    title="<?php echo !$has_ai_provider ? esc_attr__('Please configure an AI API key (Gemini, OpenAI, or Claude) in Settings', 'hmg-ai-blog-enhancer') : ''; ?>">
                 <span class="dashicons dashicons-editor-help"></span>
                 <?php _e('Generate FAQ', 'hmg-ai-blog-enhancer'); ?>
             </button>
             
-            <button type="button" class="hmg-ai-button accent hmg-ai-generate-toc" data-post-id="<?php echo $post_id; ?>">
+            <button type="button" class="hmg-ai-button accent hmg-ai-generate-toc" data-post-id="<?php echo $post_id; ?>"
+                    <?php echo !$has_ai_provider ? 'disabled' : ''; ?>
+                    title="<?php echo !$has_ai_provider ? esc_attr__('Please configure an AI API key (Gemini, OpenAI, or Claude) in Settings', 'hmg-ai-blog-enhancer') : ''; ?>">
                 <span class="dashicons dashicons-editor-ol"></span>
                 <?php _e('Generate Table of Contents', 'hmg-ai-blog-enhancer'); ?>
             </button>
             
-            <button type="button" class="hmg-ai-button hmg-ai-generate-audio" data-post-id="<?php echo $post_id; ?>">
+            <button type="button" class="hmg-ai-button hmg-ai-generate-audio" data-post-id="<?php echo $post_id; ?>"
+                    <?php echo !$has_audio_provider ? 'disabled' : ''; ?>
+                    title="<?php echo !$has_audio_provider ? esc_attr__('Please configure Eleven Labs API key in Settings', 'hmg-ai-blog-enhancer') : ''; ?>">
                 <span class="dashicons dashicons-controls-volumeon"></span>
                 <?php _e('Generate Audio Version', 'hmg-ai-blog-enhancer'); ?>
             </button>
+            
+            <?php if (!$has_ai_provider || !$has_audio_provider): ?>
+            <div class="hmg-ai-notice info" style="margin-top: 15px; padding: 10px; font-size: 12px;">
+                <?php if (!$has_ai_provider): ?>
+                    <p style="margin: 5px 0;">
+                        <span class="dashicons dashicons-info" style="color: #0073aa;"></span>
+                        <?php _e('Configure an AI provider (Gemini, OpenAI, or Claude) to generate content.', 'hmg-ai-blog-enhancer'); ?>
+                        <a href="<?php echo admin_url('admin.php?page=hmg-ai-settings'); ?>"><?php _e('Go to Settings →', 'hmg-ai-blog-enhancer'); ?></a>
+                    </p>
+                <?php endif; ?>
+                <?php if (!$has_audio_provider): ?>
+                    <p style="margin: 5px 0;">
+                        <span class="dashicons dashicons-controls-volumeon" style="color: #0073aa;"></span>
+                        <?php _e('Configure Eleven Labs API key to generate audio.', 'hmg-ai-blog-enhancer'); ?>
+                        <a href="<?php echo admin_url('admin.php?page=hmg-ai-settings'); ?>"><?php _e('Go to Settings →', 'hmg-ai-blog-enhancer'); ?></a>
+                    </p>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
             
             <!-- Audio Settings -->
             <div class="hmg-ai-audio-settings">
                 <div class="hmg-ai-form-group">
                     <label for="hmg-ai-audio-voice" style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px;">
                         <?php _e('Voice:', 'hmg-ai-blog-enhancer'); ?>
+                        <button type="button" id="hmg-ai-refresh-voices" class="button-link" style="float: right; font-size: 12px; font-weight: normal; display: inline-flex; align-items: center; gap: 4px;" title="<?php _e('Refresh voice list from Eleven Labs', 'hmg-ai-blog-enhancer'); ?>">
+                            <span class="dashicons dashicons-update" style="font-size: 14px; line-height: 1; vertical-align: middle;"></span>
+                            <span style="line-height: 1;"><?php _e('Refresh', 'hmg-ai-blog-enhancer'); ?></span>
+                        </button>
                     </label>
                     <select id="hmg-ai-audio-voice" class="hmg-ai-select hmg-ai-compact" style="width: 100%;">
-                        <option value="EXAVITQu4vr4xnSDxMaL">Sarah - Professional Female</option>
-                        <option value="21m00Tcm4TlvDq8ikWAM">Rachel - News Narrator</option>
-                        <option value="JBFqnCBsd6RMkjVDRZzb">George - Professional Male</option>
-                        <option value="pNInz6obpgDQGcFmaJgB">Adam - Conversational Male</option>
-                        <option value="2EiwWnXFnvU5JabPnv8n">Clyde - Deep Male</option>
-                        <option value="TX3LPaxmHKxFdv7VOQHJ">Liam - Storyteller</option>
-                        <option value="ThT5KcBeYPX3keUQqHPh">Dorothy - British Female</option>
-                        <option value="IKne3meq5aSn9XLyUdCD">Charlie - Australian Male</option>
+                        <?php
+                        // Get TTS service to fetch available voices
+                        if (class_exists('HMG_AI_TTS_Service')) {
+                            $tts_service = new HMG_AI_TTS_Service();
+                            $voices = $tts_service->get_available_voices();
+                            $saved_voice = get_option('hmg_ai_tts_voice', 'EXAVITQu4vr4xnSDxMaL');
+                            
+                            if (!empty($voices)) {
+                                // Group voices by category if available
+                                $premade_voices = array();
+                                $cloned_voices = array();
+                                
+                                foreach ($voices as $voice_id => $voice_data) {
+                                    $category = isset($voice_data['category']) ? $voice_data['category'] : 'premade';
+                                    if ($category === 'cloned') {
+                                        $cloned_voices[$voice_id] = $voice_data;
+                                    } else {
+                                        $premade_voices[$voice_id] = $voice_data;
+                                    }
+                                }
+                                
+                                // Display premade voices first
+                                if (!empty($premade_voices)) {
+                                    echo '<optgroup label="' . esc_attr__('Eleven Labs Voices', 'hmg-ai-blog-enhancer') . '">';
+                                    foreach ($premade_voices as $voice_id => $voice_data) {
+                                        $selected = ($voice_id == $saved_voice) ? ' selected' : '';
+                                        $name = esc_html($voice_data['name']);
+                                        $description = isset($voice_data['description']) ? ' - ' . esc_html($voice_data['description']) : '';
+                                        echo '<option value="' . esc_attr($voice_id) . '"' . $selected . '>' . $name . $description . '</option>';
+                                    }
+                                    echo '</optgroup>';
+                                }
+                                
+                                // Display cloned voices if any
+                                if (!empty($cloned_voices)) {
+                                    echo '<optgroup label="' . esc_attr__('Custom/Cloned Voices', 'hmg-ai-blog-enhancer') . '">';
+                                    foreach ($cloned_voices as $voice_id => $voice_data) {
+                                        $selected = ($voice_id == $saved_voice) ? ' selected' : '';
+                                        $name = esc_html($voice_data['name']);
+                                        $description = isset($voice_data['description']) ? ' - ' . esc_html($voice_data['description']) : '';
+                                        echo '<option value="' . esc_attr($voice_id) . '"' . $selected . '>' . $name . $description . '</option>';
+                                    }
+                                    echo '</optgroup>';
+                                }
+                            } else {
+                                // Fallback to basic voices if API fetch fails
+                                ?>
+                                <option value="EXAVITQu4vr4xnSDxMaL">Sarah - Professional Female</option>
+                                <option value="21m00Tcm4TlvDq8ikWAM">Rachel - News Narrator</option>
+                                <option value="JBFqnCBsd6RMkjVDRZzb">George - Professional Male</option>
+                                <option value="pNInz6obpgDQGcFmaJgB">Adam - Conversational Male</option>
+                                <?php
+                            }
+                        } else {
+                            // If TTS service not available, show basic voices
+                            ?>
+                            <option value="EXAVITQu4vr4xnSDxMaL">Sarah - Professional Female</option>
+                            <option value="21m00Tcm4TlvDq8ikWAM">Rachel - News Narrator</option>
+                            <option value="JBFqnCBsd6RMkjVDRZzb">George - Professional Male</option>
+                            <option value="pNInz6obpgDQGcFmaJgB">Adam - Conversational Male</option>
+                            <?php
+                        }
+                        ?>
                     </select>
                 </div>
                 
@@ -160,6 +258,13 @@ $auth_status = $auth_service->get_auth_status();
                     <span class="dashicons dashicons-info-outline"></span>
                     <?php _e('Powered by Eleven Labs - Natural AI voices', 'hmg-ai-blog-enhancer'); ?>
                 </span>
+                
+                <div style="margin-top: 8px; padding: 8px; background: rgba(0, 115, 170, 0.05); border-left: 3px solid #0073aa; border-radius: 3px;">
+                    <small style="color: #555;">
+                        <strong><?php _e('Audio Preview:', 'hmg-ai-blog-enhancer'); ?></strong>
+                        <?php _e('Audio will read the post as it appears in preview, including any inserted shortcodes (Key Takeaways, FAQ, TOC)', 'hmg-ai-blog-enhancer'); ?>
+                    </small>
+                </div>
             </div>
         </div>
         <br />
@@ -342,10 +447,35 @@ $auth_status = $auth_service->get_auth_status();
                 <?php endif; ?>
                 
                 <?php if ($generated_audio): ?>
-                    <div class="hmg-ai-content-item">
-                        <strong><?php _e('Audio Version:', 'hmg-ai-blog-enhancer'); ?></strong>
-                        <span class="dashicons dashicons-yes-alt" style="color: var(--hmg-lime-green);"></span>
-                        <audio controls class="hmg-ai-audio-player" src="<?php echo esc_url($generated_audio); ?>" style="width: 100%; margin-top: 10px;"></audio>
+                    <div class="hmg-ai-content-item" id="audio-item">
+                        <div class="hmg-ai-content-header">
+                            <strong><?php _e('Audio Version', 'hmg-ai-blog-enhancer'); ?></strong>
+                            <span class="dashicons dashicons-yes-alt" style="color: var(--hmg-lime-green);"></span>
+                        </div>
+                        <div class="hmg-ai-audio-player-wrapper">
+                            <audio controls class="hmg-ai-audio-player" style="width: 100%;">
+                                <source src="<?php echo esc_url($generated_audio); ?>" type="audio/mpeg">
+                                <?php _e('Your browser does not support the audio element.', 'hmg-ai-blog-enhancer'); ?>
+                            </audio>
+                            <div class="hmg-ai-audio-info">
+                                <span class="hmg-ai-audio-voice">🎙️ Eleven Labs Audio</span>
+                            </div>
+                        </div>
+                        <div class="hmg-ai-content-actions">
+                            <button type="button" class="button-link hmg-ai-regenerate" data-type="audio" data-post-id="<?php echo $post_id; ?>" title="Regenerate">
+                                <span class="dashicons dashicons-update"></span>
+                            </button>
+                            <button type="button" class="button-link hmg-ai-insert-shortcode" data-type="audio" title="Insert Shortcode">
+                                <span class="dashicons dashicons-shortcode"></span>
+                            </button>
+                            <a href="<?php echo esc_url($generated_audio); ?>" download class="button-link" title="Download">
+                                <span class="dashicons dashicons-download"></span>
+                            </a>
+                            <button type="button" class="button-link hmg-ai-delete-content" data-type="audio" data-post-id="<?php echo $post_id; ?>" title="Delete">
+                                <span class="dashicons dashicons-trash"></span>
+                            </button>
+                        </div>
+                        <div class="hmg-ai-content-notice" id="audio-notice"></div>
                     </div>
                 <?php endif; ?>
             </div>

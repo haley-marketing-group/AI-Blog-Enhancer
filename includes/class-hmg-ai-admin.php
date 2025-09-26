@@ -80,6 +80,12 @@ class HMG_AI_Admin {
      * @since    1.0.0
      */
     public function enqueue_styles() {
+        // Skip if we're in the block editor (styles are loaded via enqueue_block_assets)
+        $current_screen = get_current_screen();
+        if ($current_screen && $current_screen->is_block_editor()) {
+            return;
+        }
+        
         wp_enqueue_style(
             $this->plugin_name,
             HMG_AI_BLOG_ENHANCER_PLUGIN_URL . 'admin/css/hmg-ai-admin.css',
@@ -117,7 +123,7 @@ class HMG_AI_Admin {
             'hmg_ai_ajax',
             array(
                 'ajax_url' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('hmg_ai_nonce'),
+                'nonce' => wp_create_nonce('hmg-ai-ajax-nonce'),
                 'plugin_url' => HMG_AI_BLOG_ENHANCER_PLUGIN_URL,
                 'strings' => array(
                     'generating' => __('Generating content...', 'hmg-ai-blog-enhancer'),
@@ -129,7 +135,7 @@ class HMG_AI_Admin {
     }
 
     /**
-     * Enqueue block editor assets to ensure meta boxes work properly
+     * Enqueue block editor JavaScript assets
      *
      * @since    1.0.0
      */
@@ -155,7 +161,7 @@ class HMG_AI_Admin {
             'hmg_ai_ajax',
             array(
                 'ajax_url' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('hmg_ai_nonce'),
+                'nonce' => wp_create_nonce('hmg-ai-ajax-nonce'),
                 'plugin_url' => HMG_AI_BLOG_ENHANCER_PLUGIN_URL,
                 'strings' => array(
                     'generating' => __('Generating content...', 'hmg-ai-blog-enhancer'),
@@ -164,11 +170,44 @@ class HMG_AI_Admin {
                 )
             )
         );
-
-        // Enqueue admin styles for block editor
+        
+        // Note: Styles are enqueued via enqueue_block_assets for proper iframe support
+    }
+    
+    /**
+     * Enqueue block assets for both editor and frontend
+     * This is the proper way to add styles to the block editor iframe
+     *
+     * @since    1.0.0
+     */
+    public function enqueue_block_assets() {
+        // Only enqueue in admin area for editor
+        if (!is_admin()) {
+            return;
+        }
+        
+        $current_screen = get_current_screen();
+        if (!$current_screen || !in_array($current_screen->post_type, ['post', 'page'])) {
+            return;
+        }
+        
+        // Only enqueue if we're in the block editor
+        if (!$current_screen->is_block_editor()) {
+            return;
+        }
+        
+        // Enqueue styles for block editor iframe
         wp_enqueue_style(
-            $this->plugin_name . '-block-editor',
+            $this->plugin_name . '-block-styles',
             HMG_AI_BLOG_ENHANCER_PLUGIN_URL . 'admin/css/hmg-ai-admin.css',
+            array(),
+            $this->version
+        );
+        
+        // Load Haley Marketing brand fonts for block editor
+        wp_enqueue_style(
+            $this->plugin_name . '-block-fonts',
+            'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap',
             array(),
             $this->version
         );
@@ -256,7 +295,6 @@ class HMG_AI_Admin {
     public function add_meta_boxes() {
         // Debug logging
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('HMG AI: add_meta_boxes called');
         }
         
         // Check if we're in the block editor
@@ -280,7 +318,6 @@ class HMG_AI_Admin {
             );
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('HMG AI: Meta box added for block editor');
             }
         } else {
             // Classic editor
@@ -294,7 +331,6 @@ class HMG_AI_Admin {
             );
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('HMG AI: Meta box added for classic editor');
             }
         }
         
@@ -312,7 +348,6 @@ class HMG_AI_Admin {
                     update_user_meta($user_id, 'metaboxhidden_' . $current_screen->id, $hidden_meta_boxes);
                     
                     if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log('HMG AI: Removed meta box from hidden list');
                     }
                 }
             }
@@ -430,7 +465,7 @@ class HMG_AI_Admin {
     public function ajax_generate_takeaways() {
         try {
             // Verify nonce
-            if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
+            if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
                 wp_send_json_error(array(
                     'message' => __('Security check failed', 'hmg-ai-blog-enhancer')
                 ));
@@ -512,7 +547,7 @@ class HMG_AI_Admin {
     public function ajax_generate_faq() {
         try {
             // Verify nonce
-            if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
+            if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
                 wp_send_json_error(array(
                     'message' => __('Security check failed', 'hmg-ai-blog-enhancer')
                 ));
@@ -594,7 +629,7 @@ class HMG_AI_Admin {
     public function ajax_generate_toc() {
         try {
             // Verify nonce
-            if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
+            if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
                 wp_send_json_error(array(
                     'message' => __('Security check failed', 'hmg-ai-blog-enhancer')
                 ));
@@ -676,7 +711,7 @@ class HMG_AI_Admin {
     public function ajax_generate_audio() {
         try {
             // Verify nonce
-            if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
+            if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
                 wp_send_json_error(array(
                     'message' => __('Security check failed', 'hmg-ai-blog-enhancer')
                 ));
@@ -692,7 +727,7 @@ class HMG_AI_Admin {
             }
 
             // Get post content
-            $content = sanitize_textarea_field($_POST['content'] ?? '');
+            $content = $_POST['content'] ?? '';  // Don't sanitize yet - we need to check for shortcodes
             $post_id = (int) ($_POST['post_id'] ?? 0);
             $voice = sanitize_text_field($_POST['voice'] ?? 'EXAVITQu4vr4xnSDxMaL');
             
@@ -703,8 +738,57 @@ class HMG_AI_Admin {
                 return;
             }
             
+            // Check if content has our shortcodes and process them
+            $has_takeaways_shortcode = has_shortcode($content, 'hmg_ai_takeaways');
+            $has_faq_shortcode = has_shortcode($content, 'hmg_ai_faq');
+            $has_toc_shortcode = has_shortcode($content, 'hmg_ai_toc');
+            $has_audio_shortcode = has_shortcode($content, 'hmg_ai_audio');
+            
+            // Process shortcodes to get the rendered content
+            if ($has_takeaways_shortcode || $has_faq_shortcode || $has_toc_shortcode || $has_audio_shortcode) {
+                // Ensure shortcodes are registered (they might not be in AJAX context)
+                if (!shortcode_exists('hmg_ai_takeaways')) {
+                    require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/class-hmg-ai-public.php';
+                    $plugin_public = new HMG_AI_Public('hmg-ai-blog-enhancer', HMG_AI_BLOG_ENHANCER_VERSION);
+                    $plugin_public->register_shortcodes();
+                }
+                
+                // Temporarily save the post ID for shortcode context
+                global $post;
+                $original_post = $post;
+                $post = get_post($post_id);
+                
+                // Apply shortcode processing
+                $content = do_shortcode($content);
+                
+                // Restore original post
+                $post = $original_post;
+            }
+            
+            // Now strip HTML tags for audio
+            $audio_content = wp_strip_all_tags($content);
+            
+            // Add title of the post at the beginning
+            $post = get_post($post_id);
+            if ($post) {
+                $audio_content = $post->post_title . "\n\n" . $audio_content;
+            }
+            
+            // Clean up the content for better audio
+            // Remove excessive newlines but preserve paragraph breaks
+            $audio_content = preg_replace('/\n{3,}/', "\n\n", $audio_content);
+            // Remove multiple spaces (but preserve newlines)
+            $audio_content = preg_replace('/[^\S\n]+/', ' ', $audio_content);
+            // Remove spaces at the beginning and end of lines
+            $audio_content = preg_replace('/^ +| +$/m', '', $audio_content);
+            $audio_content = trim($audio_content);
+            
+            // Use the processed content for audio generation
+            $content = $audio_content;
+            
             // Load TTS service
             require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-tts-service.php';
+            
             $tts_service = new HMG_AI_TTS_Service();
             
             // Generate audio with Eleven Labs
@@ -759,7 +843,6 @@ class HMG_AI_Admin {
             ));
             
         } catch (Exception $e) {
-            error_log('HMG AI Audio Generation Error: ' . $e->getMessage());
             wp_send_json_error(array(
                 'message' => __('An error occurred while generating audio. Please try again.', 'hmg-ai-blog-enhancer')
             ));
@@ -773,7 +856,7 @@ class HMG_AI_Admin {
      */
     public function ajax_validate_api_key() {
         // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
+        if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
             wp_die(__('Security check failed', 'hmg-ai-blog-enhancer'));
         }
 
@@ -817,7 +900,7 @@ class HMG_AI_Admin {
      */
     public function ajax_get_usage_stats() {
         // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
+        if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
             wp_die(__('Security check failed', 'hmg-ai-blog-enhancer'));
         }
 
@@ -851,7 +934,7 @@ class HMG_AI_Admin {
      */
     public function ajax_test_ai_providers() {
         // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
+        if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
             wp_send_json_error(array(
                 'message' => __('Security check failed', 'hmg-ai-blog-enhancer')
             ));
@@ -870,7 +953,6 @@ class HMG_AI_Admin {
             
             // Log for debugging
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('HMG AI Provider Test Results: ' . print_r($test_results, true));
             }
             
             wp_send_json_success(array(
@@ -895,7 +977,7 @@ class HMG_AI_Admin {
      */
     public function ajax_delete_content() {
         // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
+        if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
             wp_send_json_error(array(
                 'message' => __('Security check failed', 'hmg-ai-blog-enhancer')
             ));
@@ -942,6 +1024,9 @@ class HMG_AI_Admin {
             case 'audio':
                 delete_post_meta($post_id, '_hmg_ai_audio_url');
                 delete_post_meta($post_id, '_hmg_ai_audio_generated');
+                delete_post_meta($post_id, '_hmg_ai_audio_duration');
+                delete_post_meta($post_id, '_hmg_ai_audio_voice');
+                delete_post_meta($post_id, '_hmg_ai_audio_size');
                 $deleted = true;
                 break;
             default:
@@ -969,7 +1054,7 @@ class HMG_AI_Admin {
      */
     public function ajax_save_ai_content() {
         // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'hmg_ai_nonce')) {
+        if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
             wp_send_json_error(array(
                 'message' => __('Security check failed', 'hmg-ai-blog-enhancer')
             ));
@@ -1050,6 +1135,71 @@ class HMG_AI_Admin {
             wp_send_json_success(array(
                 'message' => sprintf(__('%s content saved successfully!', 'hmg-ai-blog-enhancer'), ucfirst($content_type)),
                 'content' => $content
+            ));
+        }
+    }
+    
+    /**
+     * AJAX handler for refreshing Eleven Labs voices
+     *
+     * @since    1.0.0
+     */
+    public function ajax_refresh_voices() {
+        
+        // Check nonce
+        if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
+            wp_send_json_error(array(
+                'message' => __('Security check failed', 'hmg-ai-blog-enhancer')
+            ));
+            return;
+        }
+        
+        // Check if user has permission
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array(
+                'message' => __('You do not have permission to refresh voices', 'hmg-ai-blog-enhancer')
+            ));
+            return;
+        }
+        
+        // Check if API key is configured
+        $api_key = get_option('hmg_ai_elevenlabs_api_key');
+        if (empty($api_key)) {
+            wp_send_json_error(array(
+                'message' => __('Eleven Labs API key not configured. Please add your API key in settings.', 'hmg-ai-blog-enhancer')
+            ));
+            return;
+        }
+        
+        try {
+            // Get TTS service and clear cache
+            if (!class_exists('HMG_AI_TTS_Service')) {
+                require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-tts-service.php';
+            }
+            
+            $tts_service = new HMG_AI_TTS_Service();
+            
+            // Clear the voice cache to force a fresh fetch
+            $tts_service->clear_voice_cache();
+            
+            // Fetch fresh voices from API
+            $voices = $tts_service->get_available_voices();
+            
+            
+            if (!empty($voices)) {
+                wp_send_json_success(array(
+                    'message' => sprintf(__('Successfully fetched %d voices from Eleven Labs', 'hmg-ai-blog-enhancer'), count($voices)),
+                    'voices' => $voices,
+                    'count' => count($voices)
+                ));
+            } else {
+                wp_send_json_error(array(
+                    'message' => __('Failed to fetch voices from Eleven Labs. Please check your API key and network connection.', 'hmg-ai-blog-enhancer')
+                ));
+            }
+        } catch (Exception $e) {
+            wp_send_json_error(array(
+                'message' => sprintf(__('Error: %s', 'hmg-ai-blog-enhancer'), $e->getMessage())
             ));
         }
     }

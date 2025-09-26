@@ -92,23 +92,24 @@ if (empty($audio_data['url'])) {
                 <?php _e('Your browser does not support the audio element.', 'hmg-ai-blog-enhancer'); ?>
             </audio>
             <div class="hmg-ai-audio-controls">
-                <button class="hmg-ai-audio-speed" data-speed="1">1x</button>
-                <button class="hmg-ai-audio-speed" data-speed="1.25">1.25x</button>
-                <button class="hmg-ai-audio-speed" data-speed="1.5">1.5x</button>
-                <button class="hmg-ai-audio-speed" data-speed="2">2x</button>
+                <div class="hmg-ai-audio-speed-control">
+                    <label class="hmg-ai-audio-speed-label">Speed:</label>
+                    <div class="hmg-ai-audio-speed-buttons">
+                        <button class="hmg-ai-audio-speed active" data-speed="1">1×</button>
+                        <button class="hmg-ai-audio-speed" data-speed="1.25">1.25×</button>
+                        <button class="hmg-ai-audio-speed" data-speed="1.5">1.5×</button>
+                        <button class="hmg-ai-audio-speed" data-speed="2">2×</button>
+                    </div>
+                </div>
                 <a href="<?php echo esc_url($audio_data['url']); ?>" 
                    download="<?php echo esc_attr(sanitize_file_name($audio_data['title']) . '.mp3'); ?>"
                    class="hmg-ai-audio-download">
+                    <span class="dashicons dashicons-download"></span>
                     <?php _e('Download', 'hmg-ai-blog-enhancer'); ?>
                 </a>
             </div>
         </div>
     <?php endif; ?>
-    
-    <div class="hmg-ai-powered-by">
-        <small><?php _e('AI-Powered Audio by', 'hmg-ai-blog-enhancer'); ?> 
-        <a href="https://haleymarketing.com" target="_blank" rel="noopener">Haley Marketing</a></small>
-    </div>
 </div>
 
 <?php if ($style === 'minimal'): ?>
@@ -146,10 +147,13 @@ if (empty($audio_data['url'])) {
 <?php elseif ($style === 'player'): ?>
 <script>
 (function() {
-    const player = document.querySelector('.hmg-ai-audio-player');
-    if (player) {
+    const players = document.querySelectorAll('.hmg-ai-audio-player');
+    players.forEach(player => {
         const audio = player.querySelector('.hmg-ai-audio-element');
         const speedButtons = player.querySelectorAll('.hmg-ai-audio-speed');
+        
+        // Set initial active state
+        speedButtons[0]?.classList.add('active');
         
         speedButtons.forEach(button => {
             button.addEventListener('click', function() {
@@ -160,7 +164,7 @@ if (empty($audio_data['url'])) {
                 this.classList.add('active');
             });
         });
-    }
+    });
 })();
 </script>
 <?php endif; ?>

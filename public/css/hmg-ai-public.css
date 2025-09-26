@@ -52,15 +52,15 @@
     border-radius: var(--hmg-border-radius);
     padding: 30px;
     margin: 40px 0;
-    box-shadow: var(--hmg-box-shadow);
+    box-shadow: none;
     position: relative;
     overflow: hidden;
     transition: var(--hmg-transition);
 }
 
 .hmg-ai-takeaways:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--hmg-box-shadow-hover);
+    transform: none;
+    box-shadow: none;
 }
 
 /* Professional gradient accent */
@@ -77,7 +77,7 @@
 }
 
 .hmg-ai-takeaways:hover::before {
-    opacity: 1;
+    opacity: 0.08;
 }
 
 .hmg-ai-takeaways-header {
@@ -132,13 +132,13 @@
     padding: 15px;
     background: var(--hmg-white);
     border-radius: var(--hmg-border-radius);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: none;
     transition: var(--hmg-transition);
 }
 
 .hmg-ai-takeaway-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(51, 42, 134, 0.15);
+    transform: none;
+    box-shadow: none;
 }
 
 .hmg-ai-takeaway-bullet {
@@ -213,8 +213,8 @@
 }
 
 .hmg-ai-takeaway-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(51, 42, 134, 0.2);
+    transform: none;
+    box-shadow: none;
 }
 
 .hmg-ai-card-number {
@@ -266,7 +266,7 @@
     padding: 15px 20px;
     background: var(--hmg-white);
     border-radius: var(--hmg-border-radius);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: none;
     font-weight: 500;
     line-height: 1.5;
     position: relative;
@@ -309,14 +309,14 @@
     border: 1px solid rgba(51, 42, 134, 0.1);
     border-radius: var(--hmg-border-radius);
     overflow: hidden;
-    box-shadow: var(--hmg-box-shadow);
+    box-shadow: none;
     background: linear-gradient(135deg, var(--hmg-white) 0%, #FAFBFD 100%);
     transition: var(--hmg-transition);
 }
 
 .hmg-ai-faq:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--hmg-box-shadow-hover);
+    transform: none;
+    box-shadow: none;
 }
 
 .hmg-ai-faq-header {
@@ -409,12 +409,12 @@
 
 .hmg-ai-faq-accordion-button:hover {
     background: linear-gradient(135deg, #FAFBFD 0%, #E9ECEF 100%);
-    transform: translateX(2px);
+    transform: none;
     border-color: rgba(51, 42, 134, 0.2);
 }
 
 .hmg-ai-faq-accordion-button:hover::before {
-    transform: scaleY(1);
+    transform: scaleY(0);
 }
 
 .hmg-ai-faq-accordion-button:focus {
@@ -497,12 +497,12 @@
     border-radius: var(--hmg-border-radius);
     padding: 25px;
     transition: var(--hmg-transition);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: none;
 }
 
 .hmg-ai-faq-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(51, 42, 134, 0.2);
+    transform: none;
+    box-shadow: none;
 }
 
 .hmg-ai-faq-card-header {
@@ -560,14 +560,14 @@
     border-radius: var(--hmg-border-radius);
     padding: 30px;
     margin: 40px 0;
-    box-shadow: 0 4px 16px rgba(94, 151, 50, 0.1);
+    box-shadow: none;
     transition: var(--hmg-transition);
     position: relative;
 }
 
 .hmg-ai-toc:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(94, 151, 50, 0.15);
+    transform: none;
+    box-shadow: none;
 }
 
 /* Decorative corner accent */
@@ -627,7 +627,7 @@
 .hmg-ai-toc-link:hover {
     background: var(--hmg-lime-green);
     color: var(--hmg-white);
-    transform: translateX(5px);
+    transform: none;
 }
 
 .hmg-ai-toc-number {
@@ -711,7 +711,7 @@
 .hmg-ai-toc-horizontal-item:hover {
     background: var(--hmg-lime-green);
     color: var(--hmg-white);
-    transform: translateY(-3px);
+    transform: none;
 }
 
 .hmg-ai-toc-horizontal-item .hmg-ai-toc-number {
@@ -743,7 +743,7 @@
 .hmg-ai-toc-minimal-item:hover {
     color: var(--hmg-lime-green);
     border-bottom-color: var(--hmg-lime-green);
-    padding-left: 10px;
+    padding-left: 0;
 }
 
 .hmg-ai-toc-minimal-item[data-level="2"] {
@@ -818,7 +818,7 @@
 .hmg-ai-toc-sidebar-item:hover .hmg-ai-toc-dot,
 .hmg-ai-toc-sidebar-item.active .hmg-ai-toc-dot {
     background: var(--hmg-lime-green);
-    transform: scale(1.3);
+    transform: none;
 }
 
 .hmg-ai-toc-sidebar-item[data-level="2"] {
@@ -839,12 +839,12 @@
 
 /* === AUDIO PLAYER === */
 .hmg-ai-audio {
-    background: var(--hmg-light-gray);
-    border: 1px solid #E1E5E9;
+    background: transparent !important;
+    border: none;
     border-radius: var(--hmg-border-radius);
     padding: 25px;
     margin: 30px 0;
-    box-shadow: var(--hmg-box-shadow);
+    box-shadow: none;
 }
 
 .hmg-ai-audio-header {
@@ -866,10 +866,9 @@
 
 .hmg-ai-audio-element {
     width: 100%;
-    max-width: 500px;
     height: 54px;
     border-radius: var(--hmg-border-radius);
-    margin: 0 auto;
+    margin: 0;
     display: block;
 }
 
@@ -883,10 +882,10 @@
     display: flex;
     align-items: center;
     gap: 15px;
-    background: var(--hmg-white);
+    background: transparent;
     padding: 15px;
     border-radius: var(--hmg-border-radius);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: none;
 }
 
 .hmg-ai-audio-compact .hmg-ai-audio-element {
@@ -917,10 +916,10 @@
     display: flex;
     align-items: center;
     gap: 15px;
-    background: var(--hmg-white);
+    background: transparent;
     padding: 20px;
     border-radius: var(--hmg-border-radius);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: none;
 }
 
 .hmg-ai-audio-play-button {
@@ -971,11 +970,11 @@
 
 /* Card Style */
 .hmg-ai-audio-card {
-    background: var(--hmg-white);
+    background: transparent;
     border: 2px solid var(--hmg-orange);
     border-radius: var(--hmg-border-radius);
     overflow: hidden;
-    box-shadow: 0 4px 15px rgba(227, 111, 30, 0.1);
+    box-shadow: none;
 }
 
 .hmg-ai-audio-card-header {
@@ -1039,42 +1038,75 @@
 }
 
 .hmg-ai-audio-download {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    color: var(--hmg-orange);
+    gap: 5px;
+    color: #332a86;
     text-decoration: none;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
-    transition: var(--hmg-transition);
+    padding: 6px 14px;
+    border: 1px solid #332a86;
+    border-radius: 20px;
+    transition: all 0.2s ease;
 }
 
 .hmg-ai-audio-download:hover {
-    color: var(--hmg-dark-blue);
+    background: #332a86;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(51, 42, 134, 0.2);
+}
+
+.hmg-ai-audio-download:hover .dashicons {
+    color: #ffffff;
+}
+
+.hmg-ai-audio-download .dashicons {
+    font-size: 14px;
+    line-height: 14px;
+    vertical-align: baseline;
+    position: relative;
+    top: 2px;
+    display: inline-block;
 }
 
 .hmg-ai-audio-speed {
-    background: var(--hmg-light-gray);
-    border: 1px solid #E1E5E9;
-    border-radius: 20px;
-    padding: 6px 12px;
-    font-size: 12px;
+    background: transparent;
+    border: none;
+    border-radius: 16px;
+    padding: 5px 10px;
+    font-size: 11px;
     font-weight: 600;
-    color: var(--hmg-royal-blue);
+    color: #1a1a1a;
     cursor: pointer;
-    transition: var(--hmg-transition);
+    transition: all 0.2s ease;
+    position: relative;
 }
 
 .hmg-ai-audio-speed:hover {
-    background: var(--hmg-royal-blue);
-    color: var(--hmg-white);
+    background: rgba(51, 42, 134, 0.08);
+    color: #221a5c;
+}
+
+.hmg-ai-audio-speed.active {
+    background: rgba(51, 42, 134, 0.15);
+    color: #221a5c;
+    font-weight: 700;
+    box-shadow: none;
+}
+
+.hmg-ai-audio-speed:focus {
+    outline: 2px solid var(--hmg-royal-blue);
+    outline-offset: 1px;
 }
 
 /* Player Style (Default) */
 .hmg-ai-audio-player {
-    background: var(--hmg-white);
+    background: transparent !important;
     border-radius: var(--hmg-border-radius);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: none;
+    padding: 20px;
 }
 
 .hmg-ai-audio-player-header {
@@ -1135,12 +1167,50 @@
     color: var(--hmg-white);
 }
 
-.hmg-ai-audio-player-controls {
-    padding: 20px;
+.hmg-ai-audio-player .hmg-ai-audio-title {
+    color: #212529;
+    margin: 0 0 15px 0;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.hmg-ai-audio-player-controls .hmg-ai-audio-element {
-    max-width: none;
+.hmg-ai-audio-player .hmg-ai-audio-icon {
+    font-size: 20px;
+}
+
+.hmg-ai-audio-player .hmg-ai-audio-element {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.hmg-ai-audio-player .hmg-ai-audio-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.hmg-ai-audio-speed-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hmg-ai-audio-speed-label {
+    font-size: 12px;
+    color: #212529;
+    font-weight: 600;
+}
+
+.hmg-ai-audio-speed-buttons {
+    display: flex;
+    gap: 4px;
+    background: transparent;
+    border-radius: 20px;
+    padding: 3px;
 }
 
 /* Footer */
@@ -1171,6 +1241,7 @@
     .hmg-ai-audio {
         margin: 20px 0;
         padding: 20px;
+        background: transparent !important;
     }
     
     .hmg-ai-takeaways-header,
@@ -1235,6 +1306,16 @@
     .hmg-ai-audio-card-actions {
         flex-direction: column;
         gap: 10px;
+    }
+    
+    .hmg-ai-audio-player .hmg-ai-audio-controls {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .hmg-ai-audio-speed-control {
+        width: 100%;
+        justify-content: center;
     }
     
     .hmg-ai-audio-minimal {
@@ -1564,7 +1645,7 @@ mark.hmg-ai-highlight {
     .hmg-ai-takeaways,
     .hmg-ai-toc,
     .hmg-ai-audio {
-        background: #2D3748;
+        background: transparent;
         color: #E2E8F0;
         border-color: var(--hmg-royal-blue);
     }
@@ -1576,7 +1657,7 @@ mark.hmg-ai-highlight {
     .hmg-ai-audio-compact,
     .hmg-ai-audio-minimal,
     .hmg-ai-audio-player {
-        background: #4A5568;
+        background: transparent;
         color: #E2E8F0;
     }
     
