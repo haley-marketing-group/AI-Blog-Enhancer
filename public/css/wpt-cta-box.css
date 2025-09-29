@@ -1,0 +1,124 @@
+/* WPT CTA Box styles - Exact copy from original plugin */
+
+.clearfix::after {
+	display: block;
+	clear: both;
+	content: "";
+}
+
+.wpt-cta-box {
+	display: block;
+	margin: 1em 0;
+	padding: 1em;
+	color: #444;
+	background: #eee;
+	border: 1px solid #ccc;
+	border-radius: 3px;
+	font-size: 1em;
+}
+
+.wpt-background-image {
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: cover;
+}
+
+.wpt-cta-box-flex-wrapper {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: flex-start;
+}
+
+.wpt-cta-box-image {
+	flex: 0 1 auto;
+	display: block;
+	margin: auto;
+	max-width: 100%;
+	height: auto;
+}
+
+.wpt-cta-box-content-wrapper {
+	flex: 1;
+}
+
+/* align top */
+
+.wpt-cta-box-flex-wrapper.wpt-aligntop {
+	flex-direction: column;
+}
+
+.wpt-aligntop .wpt-cta-box-image {
+	margin-bottom: 2em;
+}
+
+/* align bottom */
+
+.wpt-cta-box-flex-wrapper.wpt-alignbottom {
+	flex-direction: column-reverse;
+}
+
+.wpt-alignbottom .wpt-cta-box-image {
+	margin-top: 2em;
+}
+
+@media(max-width: 575px) {
+
+	/* align left */
+
+	.wpt-cta-box-flex-wrapper.wpt-alignleft {
+		flex-direction: column;
+	}
+
+	.wpt-alignleft .wpt-cta-box-image {
+		margin-bottom: 2em;
+	}
+
+	/* align right */
+
+	.wpt-cta-box-flex-wrapper.wpt-alignright {
+		flex-direction: column-reverse;
+	}
+
+	.wpt-alignright .wpt-cta-box-image {
+		margin-top: 2em;
+	}
+
+}
+
+@media(min-width: 576px) {
+
+	/* align left */
+
+	.wpt-alignleft .wpt-cta-box-image {
+		max-width: 50%;
+		margin-right: 2em;
+	}
+
+	/* align right */
+
+	.wpt-cta-box-flex-wrapper.wpt-alignright {
+		flex-direction: row-reverse;
+	}
+
+	.wpt-alignright .wpt-cta-box-image {
+		max-width: 50%;
+		margin-left: 2em;
+	}
+
+}
+
+/* Button styles */
+
+.wpt-cta-button {
+	display: inline-block;
+	padding: 0.5em 1.5em;
+	font-size: 1em;
+	text-decoration: none;
+	border-radius: 3px;
+}
+
+.wpt-cta-btn-default {
+	color: #fff;
+	background: #0073e6;
+}

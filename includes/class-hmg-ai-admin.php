@@ -101,6 +101,27 @@ class HMG_AI_Admin {
             array(),
             $this->version
         );
+        
+        // Load CTA admin styles when on CTA pages
+        $screen = get_current_screen();
+        if ($screen && ($screen->id === 'hmg-ai-blog-enhancer_page_hmg-ai-blog-enhancer-cta' || $screen->id === 'post' || $screen->id === 'page')) {
+            wp_enqueue_style(
+                $this->plugin_name . '-cta-admin',
+                HMG_AI_BLOG_ENHANCER_PLUGIN_URL . 'admin/css/hmg-ai-cta-admin.css',
+                array('wp-color-picker'),
+                $this->version,
+                'all'
+            );
+            
+            // Load alignment fix CSS
+            wp_enqueue_style(
+                $this->plugin_name . '-cta-alignment',
+                HMG_AI_BLOG_ENHANCER_PLUGIN_URL . 'admin/css/hmg-ai-cta-alignment-fix.css',
+                array('wp-color-picker'),
+                $this->version,
+                'all'
+            );
+        }
     }
 
     /**
@@ -117,12 +138,23 @@ class HMG_AI_Admin {
             false
         );
 
-        // Enqueue color picker and media uploader for CTA settings page
+        // Always load color picker on admin pages
+        wp_enqueue_style('wp-color-picker');
+        wp_enqueue_script('wp-color-picker');
+        
+        // Load media uploader
+        wp_enqueue_media();
+        
+        // Enqueue color picker initialization for CTA pages
         $screen = get_current_screen();
-        if ($screen && ($screen->id === 'hmg-ai-blog-enhancer_page_hmg-ai-blog-enhancer-cta' || $screen->id === 'post' || $screen->id === 'page')) {
-            wp_enqueue_style('wp-color-picker');
-            wp_enqueue_script('wp-color-picker');
-            wp_enqueue_media();
+        if ($screen && (strpos($screen->id, 'hmg-ai-blog-enhancer-cta') !== false || $screen->id === 'post' || $screen->id === 'page')) {
+            // Add inline script to initialize color pickers
+            wp_add_inline_script('wp-color-picker', '
+                jQuery(document).ready(function($) {
+                    // Initialize all color picker fields
+                    $(".wpdk-color-picker-field").wpColorPicker();
+                });
+            ');
         }
 
         // Localize script for AJAX

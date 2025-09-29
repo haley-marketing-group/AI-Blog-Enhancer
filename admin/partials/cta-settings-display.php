@@ -1,6 +1,6 @@
 <?php
 /**
- * CTA Settings admin page display
+ * CTA Settings admin page display - Exact copy of original UI
  *
  * @link       https://haleymarketing.com
  * @since      1.1.0
@@ -18,46 +18,134 @@ $templates = $cta_manager->get_templates();
 // Handle form submission
 if (isset($_POST['submit']) && wp_verify_nonce($_POST['hmg_ai_cta_nonce'], 'hmg_ai_cta_settings')) {
     if ($active_tab === 'general') {
-        // Save global settings  
+        // Save global settings
         $global_settings = [
-            'box_color' => sanitize_hex_color($_POST['box_color'] ?? '') ?: sanitize_text_field($_POST['box_color'] ?? ''),
-            'box_bg' => sanitize_hex_color($_POST['box_bg'] ?? '') ?: sanitize_text_field($_POST['box_bg'] ?? ''),
-            'box_border_color' => sanitize_hex_color($_POST['box_border_color'] ?? '') ?: sanitize_text_field($_POST['box_border_color'] ?? ''),
+            'box_color' => sanitize_text_field($_POST['box_color'] ?? ''),
+            'box_bg' => sanitize_text_field($_POST['box_bg'] ?? ''),
+            'box_border_color' => sanitize_text_field($_POST['box_border_color'] ?? ''),
             'box_border_width' => sanitize_text_field($_POST['box_border_width'] ?? ''),
             'box_border_rad' => sanitize_text_field($_POST['box_border_rad'] ?? ''),
-            'box_pad' => sanitize_text_field($_POST['box_pad'] ?? '')
+            'box_pad' => sanitize_text_field($_POST['box_pad'] ?? ''),
+            'custom_css' => wp_strip_all_tags($_POST['custom_css'] ?? '')
         ];
         $cta_manager->save_global_settings($global_settings);
-        echo '<div class="notice notice-success"><p>' . __('Global settings saved.', 'hmg-ai-blog-enhancer') . '</p></div>';
+        echo '<div class="notice notice-success"><p>' . __('Settings saved.', 'hmg-ai-blog-enhancer') . '</p></div>';
     } else {
         // Save template settings
         $template_settings = [
-            'active' => isset($_POST[$active_tab . '_active']),
+            'active' => isset($_POST[$active_tab . '_active']) && $_POST[$active_tab . '_active'] === 'on',
             'title' => sanitize_text_field($_POST[$active_tab . '_title'] ?? ''),
             'content' => wp_kses_post($_POST[$active_tab . '_content'] ?? ''),
             'button' => sanitize_text_field($_POST[$active_tab . '_button'] ?? ''),
             'url' => esc_url_raw($_POST[$active_tab . '_url'] ?? ''),
-            'target' => isset($_POST[$active_tab . '_target']),
-            'button_class' => sanitize_text_field($_POST[$active_tab . '_button_class'] ?? 'hmg-cta-button hmg-cta-btn-default'),
+            'target' => isset($_POST[$active_tab . '_target']) && $_POST[$active_tab . '_target'] === 'on',
+            'button_class' => sanitize_text_field($_POST[$active_tab . '_button_class'] ?? ''),
             'img' => esc_url_raw($_POST[$active_tab . '_img'] ?? ''),
-            'img_align' => sanitize_text_field($_POST[$active_tab . '_img_align'] ?? 'alignleft')
+            'img_align' => sanitize_text_field($_POST[$active_tab . '_img_align'] ?? 'wpt-alignleft'),
+            'override_defaults' => isset($_POST[$active_tab . '_override_defaults']) && $_POST[$active_tab . '_override_defaults'] === 'on',
+            'box_color' => sanitize_text_field($_POST[$active_tab . '_box_color'] ?? ''),
+            'box_bg' => sanitize_text_field($_POST[$active_tab . '_box_bg'] ?? ''),
+            'box_border_color' => sanitize_text_field($_POST[$active_tab . '_box_border_color'] ?? ''),
+            'box_border_width' => sanitize_text_field($_POST[$active_tab . '_box_border_width'] ?? ''),
+            'box_border_rad' => sanitize_text_field($_POST[$active_tab . '_box_border_rad'] ?? ''),
+            'box_pad' => sanitize_text_field($_POST[$active_tab . '_box_pad'] ?? ''),
+            'custom_css' => wp_strip_all_tags($_POST[$active_tab . '_custom_css'] ?? '')
         ];
         $cta_manager->save_template_settings($active_tab, $template_settings);
-        echo '<div class="notice notice-success"><p>' . sprintf(__('%s settings saved.', 'hmg-ai-blog-enhancer'), $templates[$active_tab]) . '</p></div>';
+        echo '<div class="notice notice-success"><p>' . __('Settings saved.', 'hmg-ai-blog-enhancer') . '</p></div>';
     }
 }
+
+// WPDK-style CSS
 ?>
+<style>
+.wpdk-form { margin-top: 20px; }
+.wpdk-form-section { margin-bottom: 30px; background: #fff; border: 1px solid #e5e5e5; }
+.wpdk-form-section h3 { margin: 0; padding: 12px 15px; background: #f5f5f5; border-bottom: 1px solid #e5e5e5; font-size: 14px; font-weight: 600; }
+.wpdk-form-fieldset { padding: 15px; }
+.wpdk-form-row { margin-bottom: 20px; display: table; width: 100%; }
+.wpdk-form-label { display: table-cell; width: 200px; padding: 8px 10px 0 0; text-align: right; vertical-align: top; font-weight: 600; }
+.wpdk-form-field { display: table-cell; }
+.wpdk-form-description { display: block; margin-top: 5px; color: #666; font-size: 13px; font-style: italic; }
+.wpdk-form input[type="text"]:not(.wp-color-picker), .wpdk-form input[type="url"], .wpdk-form textarea, .wpdk-form select { width: 100%; max-width: 400px; }
+.wpdk-form textarea { min-height: 100px; }
+
+/* WordPress Color Picker Integration */
+.wp-picker-container { 
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+.wp-picker-container .wp-color-result { 
+    margin: 0 !important; 
+    height: 32px !important;
+    min-width: 70px !important;
+    border: 1px solid #7e8993 !important;
+    border-radius: 4px !important;
+}
+.wp-picker-container .wp-color-result-text { 
+    display: block !important;
+    line-height: 30px !important;
+}
+.wp-picker-container .wp-picker-input-wrap {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+}
+.wp-picker-container .wp-picker-input-wrap input[type="text"] { 
+    width: 80px !important;
+    height: 32px !important;
+    padding: 0 8px !important;
+    border: 1px solid #8c8f94 !important;
+    border-radius: 4px !important;
+    margin: 0 !important;
+}
+.wp-picker-container button.wp-picker-default,
+.wp-picker-container button.wp-picker-clear { 
+    height: 32px !important;
+    padding: 0 10px !important;
+    margin: 0 !important;
+    border: 1px solid #8c8f94 !important;
+    border-radius: 4px !important;
+    background: #f0f0f1 !important;
+    color: #2c3338 !important;
+    cursor: pointer !important;
+}
+.wp-picker-container button:hover {
+    background: #e5e5e5 !important;
+}
+.wp-picker-holder { 
+    position: absolute !important; 
+    z-index: 9999 !important; 
+    margin-top: 5px !important;
+}
+.iris-picker { 
+    position: absolute !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+}
+
+.wpdk-switch-button { position: relative; display: inline-block; width: 60px; height: 28px; }
+.wpdk-switch-button input { opacity: 0; width: 0; height: 0; }
+.wpdk-switch-button-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 28px; }
+.wpdk-switch-button-slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .wpdk-switch-button-slider { background-color: #2196F3; }
+input:checked + .wpdk-switch-button-slider:before { transform: translateX(32px); }
+.wpdk-file-media { display: flex; align-items: center; gap: 10px; }
+.wpdk-file-media input { flex: 1; }
+.wpdk-file-media button { flex-shrink: 0; }
+.wpdk-color-picker-field { max-width: 100px !important; }
+</style>
 
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
     
-    <p><?php _e('Configure call-to-action templates that can be used on blog posts.', 'hmg-ai-blog-enhancer'); ?></p>
-
     <!-- Tabs Navigation -->
     <h2 class="nav-tab-wrapper">
         <a href="?page=hmg-ai-blog-enhancer-cta&tab=general" 
            class="nav-tab <?php echo $active_tab === 'general' ? 'nav-tab-active' : ''; ?>">
-            <?php _e('General Settings', 'hmg-ai-blog-enhancer'); ?>
+            <?php _e('General', 'hmg-ai-blog-enhancer'); ?>
         </a>
         <?php foreach ($templates as $key => $label) : ?>
             <a href="?page=hmg-ai-blog-enhancer-cta&tab=<?php echo esc_attr($key); ?>" 
@@ -67,213 +155,286 @@ if (isset($_POST['submit']) && wp_verify_nonce($_POST['hmg_ai_cta_nonce'], 'hmg_
         <?php endforeach; ?>
     </h2>
 
-    <form method="post" action="" enctype="multipart/form-data">
+    <form method="post" action="" class="wpdk-form">
         <?php wp_nonce_field('hmg_ai_cta_settings', 'hmg_ai_cta_nonce'); ?>
         
         <?php if ($active_tab === 'general') : 
-            $global_settings = $cta_manager->get_global_settings();
+            $settings = $cta_manager->get_global_settings();
         ?>
-            <h2><?php _e('Default CTA Styling', 'hmg-ai-blog-enhancer'); ?></h2>
-            <p><?php _e('These settings will be used as defaults for all CTAs unless overridden.', 'hmg-ai-blog-enhancer'); ?></p>
-            
-            <table class="form-table">
-                <tr>
-                    <th scope="row">
-                        <label for="box_color"><?php _e('Text Color', 'hmg-ai-blog-enhancer'); ?></label>
-                    </th>
-                    <td>
-                        <input type="text" name="box_color" id="box_color" 
-                               value="<?php echo esc_attr($global_settings['box_color']); ?>" 
-                               class="regular-text color-field" />
-                        <p class="description"><?php _e('Default text color for CTA boxes.', 'hmg-ai-blog-enhancer'); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <label for="box_bg"><?php _e('Background Color', 'hmg-ai-blog-enhancer'); ?></label>
-                    </th>
-                    <td>
-                        <input type="text" name="box_bg" id="box_bg" 
-                               value="<?php echo esc_attr($global_settings['box_bg']); ?>" 
-                               class="regular-text color-field" />
-                        <p class="description"><?php _e('Default background color for CTA boxes.', 'hmg-ai-blog-enhancer'); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <label for="box_border_color"><?php _e('Border Color', 'hmg-ai-blog-enhancer'); ?></label>
-                    </th>
-                    <td>
-                        <input type="text" name="box_border_color" id="box_border_color" 
-                               value="<?php echo esc_attr($global_settings['box_border_color']); ?>" 
-                               class="regular-text color-field" />
-                        <p class="description"><?php _e('Default border color for CTA boxes.', 'hmg-ai-blog-enhancer'); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <label for="box_border_width"><?php _e('Border Width', 'hmg-ai-blog-enhancer'); ?></label>
-                    </th>
-                    <td>
-                        <input type="text" name="box_border_width" id="box_border_width" 
-                               value="<?php echo esc_attr($global_settings['box_border_width']); ?>" 
-                               class="regular-text" placeholder="1px" />
-                        <p class="description"><?php _e('CSS border width (e.g., 1px, 2px 0 2px 0).', 'hmg-ai-blog-enhancer'); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <label for="box_border_rad"><?php _e('Border Radius', 'hmg-ai-blog-enhancer'); ?></label>
-                    </th>
-                    <td>
-                        <input type="text" name="box_border_rad" id="box_border_rad" 
-                               value="<?php echo esc_attr($global_settings['box_border_rad']); ?>" 
-                               class="regular-text" placeholder="4px" />
-                        <p class="description"><?php _e('CSS border radius for rounded corners.', 'hmg-ai-blog-enhancer'); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <label for="box_pad"><?php _e('Padding', 'hmg-ai-blog-enhancer'); ?></label>
-                    </th>
-                    <td>
-                        <input type="text" name="box_pad" id="box_pad" 
-                               value="<?php echo esc_attr($global_settings['box_pad']); ?>" 
-                               class="regular-text" placeholder="20px" />
-                        <p class="description"><?php _e('CSS padding inside CTA boxes.', 'hmg-ai-blog-enhancer'); ?></p>
-                    </td>
-                </tr>
-            </table>
+            <!-- Default Branding Section -->
+            <div class="wpdk-form-section">
+                <h3><?php _e('Default Branding', 'hmg-ai-blog-enhancer'); ?></h3>
+                <div class="wpdk-form-fieldset">
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Text Color', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="text" name="box_color" class="wpdk-color-picker-field" 
+                                   data-default-color="#444444"
+                                   value="<?php echo esc_attr($settings['box_color']); ?>" />
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Background Color', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="text" name="box_bg" class="wpdk-color-picker-field" 
+                                   data-default-color="#eeeeee"
+                                   value="<?php echo esc_attr($settings['box_bg']); ?>" />
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Border Color', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="text" name="box_border_color" class="wpdk-color-picker-field" 
+                                   data-default-color="#cccccc"
+                                   value="<?php echo esc_attr($settings['box_border_color']); ?>" />
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Border Width', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="text" name="box_border_width" placeholder="1px" 
+                                   title="Enter the border width. Order: top, right, bottom, left"
+                                   value="<?php echo esc_attr($settings['box_border_width']); ?>" />
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Border Radius', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="text" name="box_border_rad" placeholder="3px"
+                                   title="Enter the border radius. Order: top, right, bottom, left"
+                                   value="<?php echo esc_attr($settings['box_border_rad']); ?>" />
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Padding', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="text" name="box_pad" placeholder="1em"
+                                   title="Enter the padding. Order: top, right, bottom, left"
+                                   value="<?php echo esc_attr($settings['box_pad']); ?>" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Styles Section -->
+            <div class="wpdk-form-section">
+                <h3><?php _e('Custom Styles', 'hmg-ai-blog-enhancer'); ?></h3>
+                <div class="wpdk-form-fieldset">
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Custom CSS', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <textarea name="custom_css" rows="8"><?php echo esc_textarea($settings['custom_css'] ?? ''); ?></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
         <?php else : 
             // Template settings
             $settings = $cta_manager->get_template_settings($active_tab);
+            $template_name = $templates[$active_tab];
         ?>
-            <h2><?php echo esc_html($templates[$active_tab]); ?> <?php _e('Settings', 'hmg-ai-blog-enhancer'); ?></h2>
-            
-            <table class="form-table">
-                <tr>
-                    <th scope="row">
-                        <?php _e('Enable this CTA', 'hmg-ai-blog-enhancer'); ?>
-                    </th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="<?php echo $active_tab; ?>_active" value="1" 
-                                   <?php checked($settings['active']); ?> />
-                            <?php _e('Make this CTA available for selection on blog posts', 'hmg-ai-blog-enhancer'); ?>
-                        </label>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <label for="<?php echo $active_tab; ?>_title"><?php _e('Title', 'hmg-ai-blog-enhancer'); ?></label>
-                    </th>
-                    <td>
-                        <input type="text" name="<?php echo $active_tab; ?>_title" 
-                               id="<?php echo $active_tab; ?>_title" 
-                               value="<?php echo esc_attr($settings['title']); ?>" 
-                               class="regular-text" />
-                        <p class="description"><?php _e('The headline for this CTA.', 'hmg-ai-blog-enhancer'); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <label for="<?php echo $active_tab; ?>_content"><?php _e('Content', 'hmg-ai-blog-enhancer'); ?></label>
-                    </th>
-                    <td>
-                        <?php 
-                        wp_editor(
-                            $settings['content'],
-                            $active_tab . '_content',
-                            [
-                                'textarea_name' => $active_tab . '_content',
-                                'media_buttons' => false,
-                                'textarea_rows' => 5,
-                                'teeny' => true
-                            ]
-                        );
-                        ?>
-                        <p class="description"><?php _e('The main content/description for this CTA.', 'hmg-ai-blog-enhancer'); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <label for="<?php echo $active_tab; ?>_button"><?php _e('Button Text', 'hmg-ai-blog-enhancer'); ?></label>
-                    </th>
-                    <td>
-                        <input type="text" name="<?php echo $active_tab; ?>_button" 
-                               id="<?php echo $active_tab; ?>_button" 
-                               value="<?php echo esc_attr($settings['button']); ?>" 
-                               class="regular-text" />
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <label for="<?php echo $active_tab; ?>_url"><?php _e('Button URL', 'hmg-ai-blog-enhancer'); ?></label>
-                    </th>
-                    <td>
-                        <input type="url" name="<?php echo $active_tab; ?>_url" 
-                               id="<?php echo $active_tab; ?>_url" 
-                               value="<?php echo esc_url($settings['url']); ?>" 
-                               class="large-text" />
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <?php _e('Button Target', 'hmg-ai-blog-enhancer'); ?>
-                    </th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="<?php echo $active_tab; ?>_target" value="1" 
-                                   <?php checked($settings['target']); ?> />
-                            <?php _e('Open link in new window', 'hmg-ai-blog-enhancer'); ?>
-                        </label>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <label for="<?php echo $active_tab; ?>_button_class"><?php _e('Button CSS Class', 'hmg-ai-blog-enhancer'); ?></label>
-                    </th>
-                    <td>
-                        <input type="text" name="<?php echo $active_tab; ?>_button_class" 
-                               id="<?php echo $active_tab; ?>_button_class" 
-                               value="<?php echo esc_attr($settings['button_class']); ?>" 
-                               class="regular-text" 
-                               placeholder="hmg-cta-button hmg-cta-btn-default" />
-                        <p class="description"><?php _e('CSS classes for button styling.', 'hmg-ai-blog-enhancer'); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <label for="<?php echo $active_tab; ?>_img"><?php _e('Image URL', 'hmg-ai-blog-enhancer'); ?></label>
-                    </th>
-                    <td>
-                        <input type="url" name="<?php echo $active_tab; ?>_img" 
-                               id="<?php echo $active_tab; ?>_img" 
-                               value="<?php echo esc_url($settings['img']); ?>" 
-                               class="large-text" />
-                        <button type="button" class="button hmg-cta-upload-image" 
-                                data-target="<?php echo $active_tab; ?>_img">
-                            <?php _e('Upload Image', 'hmg-ai-blog-enhancer'); ?>
-                        </button>
-                        <p class="description"><?php _e('Optional image to display in the CTA.', 'hmg-ai-blog-enhancer'); ?></p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <label for="<?php echo $active_tab; ?>_img_align"><?php _e('Image Alignment', 'hmg-ai-blog-enhancer'); ?></label>
-                    </th>
-                    <td>
-                        <select name="<?php echo $active_tab; ?>_img_align" id="<?php echo $active_tab; ?>_img_align">
-                            <option value="alignleft" <?php selected($settings['img_align'], 'alignleft'); ?>><?php _e('Left', 'hmg-ai-blog-enhancer'); ?></option>
-                            <option value="alignright" <?php selected($settings['img_align'], 'alignright'); ?>><?php _e('Right', 'hmg-ai-blog-enhancer'); ?></option>
-                            <option value="aligntop" <?php selected($settings['img_align'], 'aligntop'); ?>><?php _e('Top', 'hmg-ai-blog-enhancer'); ?></option>
-                            <option value="alignbottom" <?php selected($settings['img_align'], 'alignbottom'); ?>><?php _e('Bottom', 'hmg-ai-blog-enhancer'); ?></option>
-                            <option value="background" <?php selected($settings['img_align'], 'background'); ?>><?php _e('Background', 'hmg-ai-blog-enhancer'); ?></option>
-                        </select>
-                    </td>
-                </tr>
-            </table>
+            <!-- CTA Active Section -->
+            <div class="wpdk-form-section">
+                <h3><?php echo esc_html($template_name); ?> CTA</h3>
+                <div class="wpdk-form-fieldset">
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Active', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <label class="wpdk-switch-button">
+                                <input type="checkbox" name="<?php echo $active_tab; ?>_active" value="on" 
+                                       <?php checked($settings['active']); ?> />
+                                <span class="wpdk-switch-button-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Section -->
+            <div class="wpdk-form-section">
+                <h3><?php _e('Content', 'hmg-ai-blog-enhancer'); ?></h3>
+                <div class="wpdk-form-fieldset">
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Title', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="text" name="<?php echo $active_tab; ?>_title" 
+                                   value="<?php echo esc_attr($settings['title']); ?>" />
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Content', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <textarea name="<?php echo $active_tab; ?>_content"><?php echo esc_textarea($settings['content']); ?></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Button Text', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="text" name="<?php echo $active_tab; ?>_button" 
+                                   value="<?php echo esc_attr($settings['button']); ?>" />
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Button URL', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="url" name="<?php echo $active_tab; ?>_url" 
+                                   value="<?php echo esc_url($settings['url']); ?>" />
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Open in new window', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <label class="wpdk-switch-button">
+                                <input type="checkbox" name="<?php echo $active_tab; ?>_target" value="on" 
+                                       <?php checked($settings['target']); ?> />
+                                <span class="wpdk-switch-button-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Button Class', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="text" name="<?php echo $active_tab; ?>_button_class" 
+                                   placeholder="ex: btn btn-primary"
+                                   value="<?php echo esc_attr($settings['button_class']); ?>" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Section -->
+            <div class="wpdk-form-section">
+                <h3><?php _e('Image', 'hmg-ai-blog-enhancer'); ?></h3>
+                <div class="wpdk-form-fieldset">
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Image', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <div class="wpdk-file-media">
+                                <input type="url" name="<?php echo $active_tab; ?>_img" 
+                                       id="<?php echo $active_tab; ?>_img"
+                                       value="<?php echo esc_url($settings['img']); ?>" />
+                                <button type="button" class="button wpdk-media-upload" 
+                                        data-target="<?php echo $active_tab; ?>_img">
+                                    <?php _e('Upload', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Image Alignment', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <select name="<?php echo $active_tab; ?>_img_align">
+                                <option value="wpt-alignleft" <?php selected($settings['img_align'], 'wpt-alignleft'); ?>><?php _e('Left', 'hmg-ai-blog-enhancer'); ?></option>
+                                <option value="wpt-alignright" <?php selected($settings['img_align'], 'wpt-alignright'); ?>><?php _e('Right', 'hmg-ai-blog-enhancer'); ?></option>
+                                <option value="wpt-aligntop" <?php selected($settings['img_align'], 'wpt-aligntop'); ?>><?php _e('Top', 'hmg-ai-blog-enhancer'); ?></option>
+                                <option value="wpt-alignbottom" <?php selected($settings['img_align'], 'wpt-alignbottom'); ?>><?php _e('Bottom', 'hmg-ai-blog-enhancer'); ?></option>
+                                <option value="wpt-background" <?php selected($settings['img_align'], 'wpt-background'); ?>><?php _e('Background', 'hmg-ai-blog-enhancer'); ?></option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Branding Section -->
+            <div class="wpdk-form-section">
+                <h3><?php _e('Branding', 'hmg-ai-blog-enhancer'); ?></h3>
+                <div class="wpdk-form-fieldset">
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Override Defaults', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <label class="wpdk-switch-button">
+                                <input type="checkbox" name="<?php echo $active_tab; ?>_override_defaults" value="on" 
+                                       <?php checked($settings['override_defaults']); ?> />
+                                <span class="wpdk-switch-button-slider"></span>
+                            </label>
+                            <span class="wpdk-form-description"><?php _e('Turn this on to override the defaults set in the General tab.', 'hmg-ai-blog-enhancer'); ?></span>
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Text Color', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="text" name="<?php echo $active_tab; ?>_box_color" 
+                                   class="wpdk-color-picker-field"
+                                   data-default-color="#444444"
+                                   value="<?php echo esc_attr($settings['box_color'] ?? ''); ?>" />
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Background Color', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="text" name="<?php echo $active_tab; ?>_box_bg" 
+                                   class="wpdk-color-picker-field"
+                                   data-default-color="#eeeeee"
+                                   value="<?php echo esc_attr($settings['box_bg'] ?? ''); ?>" />
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Border Color', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="text" name="<?php echo $active_tab; ?>_box_border_color" 
+                                   class="wpdk-color-picker-field"
+                                   data-default-color="#cccccc"
+                                   value="<?php echo esc_attr($settings['box_border_color'] ?? ''); ?>" />
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Border Width', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="text" name="<?php echo $active_tab; ?>_box_border_width" 
+                                   title="Enter the border width. Order: top, right, bottom, left"
+                                   value="<?php echo esc_attr($settings['box_border_width'] ?? ''); ?>" />
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Border Radius', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="text" name="<?php echo $active_tab; ?>_box_border_rad" 
+                                   title="Enter the border radius. Order: top, right, bottom, left"
+                                   value="<?php echo esc_attr($settings['box_border_rad'] ?? ''); ?>" />
+                        </div>
+                    </div>
+                    
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Padding', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <input type="text" name="<?php echo $active_tab; ?>_box_pad" 
+                                   title="Enter the padding. Order: top, right, bottom, left"
+                                   value="<?php echo esc_attr($settings['box_pad'] ?? ''); ?>" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Styles Section -->
+            <div class="wpdk-form-section">
+                <h3><?php _e('Custom Styles', 'hmg-ai-blog-enhancer'); ?></h3>
+                <div class="wpdk-form-fieldset">
+                    <div class="wpdk-form-row">
+                        <label class="wpdk-form-label"><?php _e('Custom CSS', 'hmg-ai-blog-enhancer'); ?></label>
+                        <div class="wpdk-form-field">
+                            <textarea name="<?php echo $active_tab; ?>_custom_css" rows="8"
+                                      title="Add custom CSS to this CTA."><?php echo esc_textarea($settings['custom_css'] ?? ''); ?></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
         <?php endif; ?>
 
@@ -283,13 +444,25 @@ if (isset($_POST['submit']) && wp_verify_nonce($_POST['hmg_ai_cta_nonce'], 'hmg_
 
 <script>
 jQuery(document).ready(function($) {
-    // Initialize WordPress color picker for all color fields
-    if ($.fn.wpColorPicker) {
-        $('.color-field').wpColorPicker();
+    // Initialize color pickers on page load
+    function initializeColorPickers() {
+        $('.wpdk-color-picker-field').each(function() {
+            if (!$(this).hasClass('wp-color-picker')) {
+                $(this).wpColorPicker();
+            }
+        });
     }
     
+    // Initialize immediately
+    initializeColorPickers();
+    
+    // Re-initialize when switching tabs (in case of dynamic content)
+    $('.nav-tab').on('click', function() {
+        setTimeout(initializeColorPickers, 100);
+    });
+    
     // Media uploader
-    $('.hmg-cta-upload-image').on('click', function(e) {
+    $('.wpdk-media-upload').on('click', function(e) {
         e.preventDefault();
         
         var button = $(this);

@@ -1,0 +1,189 @@
+/**
+ * CTA Admin Styles
+ * 
+ * Styles for CTA Manager admin interface
+ * @since 1.1.0
+ */
+
+/* Color Picker Fields */
+.hmg-cta-color-field-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.color-field,
+.hmg-color-field {
+    padding-left: 40px !important;
+    min-width: 200px;
+}
+
+.color-field::before,
+.hmg-color-field::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc),
+                linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc);
+    background-size: 8px 8px;
+    background-position: 0 0, 4px 4px;
+}
+
+/* WordPress Color Picker Enhancements */
+.wp-picker-container {
+    display: inline-block;
+    position: relative;
+}
+
+.wp-picker-container .wp-color-result {
+    margin: 0 6px 6px 0;
+    height: 30px;
+    min-width: 30px;
+}
+
+.wp-picker-container .wp-color-result::after {
+    line-height: 28px;
+}
+
+/* Color Input Icons */
+.hmg-color-input-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    background: currentColor;
+    pointer-events: none;
+    box-shadow: inset 0 0 0 2px #fff;
+}
+
+/* HTML5 Color Input Fallback Styles */
+.hmg-color-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hmg-html5-color-picker {
+    width: 50px;
+    height: 35px;
+    padding: 2px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    background: #fff;
+}
+
+.hmg-html5-color-picker:hover {
+    border-color: #999;
+}
+
+.hmg-html5-color-picker:focus {
+    border-color: #007cba;
+    box-shadow: 0 0 0 1px #007cba;
+    outline: none;
+}
+
+/* CTA Settings Form Improvements */
+.form-table .color-field,
+.form-table .hmg-color-field {
+    vertical-align: middle;
+}
+
+.wp-picker-container .description {
+    clear: both;
+    display: block;
+    margin-top: 8px;
+}
+
+/* Tab Navigation Improvements */
+.nav-tab-wrapper {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ccc;
+}
+
+.nav-tab {
+    margin-bottom: -1px;
+}
+
+.nav-tab-active {
+    background: #fff;
+    border-bottom-color: #fff;
+}
+
+/* Metabox Color Fields */
+.hmg-cta-metabox .hmg-color-field {
+    width: calc(100% - 50px);
+    max-width: 300px;
+}
+
+.hmg-cta-metabox .wp-picker-container {
+    display: block;
+    margin-top: 5px;
+}
+
+.hmg-cta-metabox .wp-picker-input-wrap {
+    display: inline-block;
+}
+
+/* Responsive Adjustments */
+@media screen and (max-width: 782px) {
+    .wp-picker-container .wp-color-result {
+        height: 40px;
+        min-width: 40px;
+    }
+    
+    .wp-picker-container .wp-color-result::after {
+        line-height: 38px;
+    }
+    
+    .hmg-html5-color-picker {
+        width: 60px;
+        height: 40px;
+    }
+}
+
+/* Color Preview Box */
+.hmg-cta-color-preview {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin-right: 10px;
+    background-image: linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee),
+                      linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee);
+    background-size: 10px 10px;
+    background-position: 0 0, 5px 5px;
+}
+
+/* Better Visual Feedback */
+.color-field:focus,
+.hmg-color-field:focus {
+    border-color: #007cba;
+    box-shadow: 0 0 0 1px #007cba;
+    outline: 2px solid transparent;
+}
+
+/* Loading State */
+.hmg-color-picker-loading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.hmg-color-picker-loading::after {
+    content: '⌛';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}

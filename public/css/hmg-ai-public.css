@@ -6,6 +6,8 @@
  * Typography: Roboto
  */
 
+@import url('wpt-cta-box.css');
+
 /* === HALEY MARKETING BRAND VARIABLES === */
 :root {
     /* Primary Colors (from Brand Handbook) */

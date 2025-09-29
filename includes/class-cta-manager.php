@@ -115,9 +115,9 @@ class HMG_AI_CTA_Manager {
             'button' => $this->get_default_button_text($template),
             'url' => '',
             'target' => false,
-            'button_class' => 'hmg-cta-button hmg-cta-btn-default',
+            'button_class' => 'wpt-cta-button wpt-cta-btn-default',
             'img' => '',
-            'img_align' => 'alignleft',
+            'img_align' => 'wpt-alignleft',
             'override_defaults' => false,
             'box_color' => '#333333',
             'box_bg' => '#f7f7f7',
@@ -211,9 +211,9 @@ class HMG_AI_CTA_Manager {
                 'button' => get_post_meta($post_id, '_hmg_ai_cta_button_text', true),
                 'url' => get_post_meta($post_id, '_hmg_ai_cta_button_url', true),
                 'target' => get_post_meta($post_id, '_hmg_ai_cta_button_target', true),
-                'button_class' => get_post_meta($post_id, '_hmg_ai_cta_button_class', true) ?: 'hmg-cta-button hmg-cta-btn-default',
+                'button_class' => get_post_meta($post_id, '_hmg_ai_cta_button_class', true) ?: 'wpt-cta-button wpt-cta-btn-default',
                 'img' => get_post_meta($post_id, '_hmg_ai_cta_img', true),
-                'img_align' => get_post_meta($post_id, '_hmg_ai_cta_img_align', true) ?: 'alignleft',
+                'img_align' => get_post_meta($post_id, '_hmg_ai_cta_img_align', true) ?: 'wpt-alignleft',
                 'override_defaults' => get_post_meta($post_id, '_hmg_ai_cta_override_defaults', true),
                 'box_color' => get_post_meta($post_id, '_hmg_ai_cta_box_color', true),
                 'box_bg' => get_post_meta($post_id, '_hmg_ai_cta_box_bg', true),
@@ -267,7 +267,7 @@ class HMG_AI_CTA_Manager {
         
         // Add custom CSS if provided
         if (!empty($custom_css)) {
-            $html .= '<style>#hmg-cta-box-' . $post_id . ' { ' . esc_html($custom_css) . ' }</style>';
+            $html .= '<style>#wpt-cta-box-' . $post_id . ' { ' . esc_html($custom_css) . ' }</style>';
         }
 
         // Add inline styles
@@ -294,12 +294,12 @@ class HMG_AI_CTA_Manager {
         // Build CTA HTML
         $background_class = '';
         $background_style = '';
-        if (!empty($settings['img']) && $settings['img_align'] === 'background') {
-            $background_class = ' hmg-background-image';
+        if (!empty($settings['img']) && $settings['img_align'] === 'wpt-background') {
+            $background_class = ' wpt-background-image';
             $background_style = ' style="background-image: url(' . esc_url($settings['img']) . ');"';
         }
 
-        $html .= '<div class="hmg-cta-box' . $background_class . ' clearfix" id="hmg-cta-box-' . $post_id . '"';
+        $html .= '<div class="wpt-cta-box' . $background_class . ' clearfix" id="wpt-cta-box-' . $post_id . '"';
         if (!empty($inline_styles) && empty($background_style)) {
             $html .= ' style="' . $inline_styles . '"';
         } elseif (!empty($background_style)) {
@@ -307,25 +307,25 @@ class HMG_AI_CTA_Manager {
         }
         $html .= '>';
         
-        $html .= '<div class="hmg-cta-box-flex-wrapper hmg-' . esc_attr($settings['img_align']) . '">';
+        $html .= '<div class="wpt-cta-box-flex-wrapper ' . esc_attr($settings['img_align']) . '">';
         
         // Add image if not background
-        if (!empty($settings['img']) && $settings['img_align'] !== 'background') {
-            $html .= '<img src="' . esc_url($settings['img']) . '" alt="" class="hmg-cta-box-image" />';
+        if (!empty($settings['img']) && $settings['img_align'] !== 'wpt-background') {
+            $html .= '<img src="' . esc_url($settings['img']) . '" alt="" class="wpt-cta-box-image" />';
         }
         
-        $html .= '<div class="hmg-cta-box-content-wrapper">';
+        $html .= '<div class="wpt-cta-box-content-wrapper">';
         
         // Add title
         if (!empty($settings['title'])) {
-            $html .= '<div class="hmg-cta-box-header">';
-            $html .= '<h3 class="hmg-cta-box-title">' . esc_html($settings['title']) . '</h3>';
+            $html .= '<div class="wpt-cta-box-header">';
+            $html .= '<h3 class="wpt-cta-box-title">' . esc_html($settings['title']) . '</h3>';
             $html .= '</div>';
         }
         
         // Add content
         if (!empty($settings['content'])) {
-            $html .= '<div class="hmg-cta-box-content clearfix">';
+            $html .= '<div class="wpt-cta-box-content clearfix">';
             $html .= wpautop(wp_kses_post($settings['content']));
             $html .= '</div>';
         }
@@ -333,16 +333,16 @@ class HMG_AI_CTA_Manager {
         // Add button
         if (!empty($settings['button']) && !empty($settings['url'])) {
             $target = !empty($settings['target']) ? ' target="_blank" rel="noopener noreferrer"' : '';
-            $html .= '<div class="hmg-cta-box-footer">';
+            $html .= '<div class="wpt-cta-box-footer">';
             $html .= '<a class="' . esc_attr($settings['button_class']) . '" href="' . esc_url($settings['url']) . '"' . $target . '>';
             $html .= esc_html($settings['button']);
             $html .= '</a>';
             $html .= '</div>';
         }
         
-        $html .= '</div>'; // .hmg-cta-box-content-wrapper
-        $html .= '</div>'; // .hmg-cta-box-flex-wrapper
-        $html .= '</div>'; // .hmg-cta-box
+        $html .= '</div>'; // .wpt-cta-box-content-wrapper
+        $html .= '</div>'; // .wpt-cta-box-flex-wrapper
+        $html .= '</div>'; // .wpt-cta-box
         
         return $html;
     }

@@ -70,7 +70,7 @@ class HMG_AI_CTA_Metabox {
             'button_target' => get_post_meta($post->ID, '_hmg_ai_cta_button_target', true),
             'button_class' => get_post_meta($post->ID, '_hmg_ai_cta_button_class', true),
             'img' => get_post_meta($post->ID, '_hmg_ai_cta_img', true),
-            'img_align' => get_post_meta($post->ID, '_hmg_ai_cta_img_align', true) ?: 'alignleft',
+            'img_align' => get_post_meta($post->ID, '_hmg_ai_cta_img_align', true) ?: 'wpt-alignleft',
             'override_defaults' => get_post_meta($post->ID, '_hmg_ai_cta_override_defaults', true),
             'box_color' => get_post_meta($post->ID, '_hmg_ai_cta_box_color', true),
             'box_bg' => get_post_meta($post->ID, '_hmg_ai_cta_box_bg', true),
@@ -157,7 +157,7 @@ class HMG_AI_CTA_Metabox {
                     <label for="hmg_ai_cta_button_class"><?php _e('Button CSS Class', 'hmg-ai-blog-enhancer'); ?></label>
                     <input type="text" name="hmg_ai_cta_button_class" id="hmg_ai_cta_button_class" 
                            value="<?php echo esc_attr($custom_values['button_class']); ?>" 
-                           placeholder="hmg-cta-button hmg-cta-btn-default" />
+                           placeholder="wpt-cta-button wpt-cta-btn-default" />
                 </div>
 
                 <h4><?php _e('Image', 'hmg-ai-blog-enhancer'); ?></h4>
@@ -171,11 +171,11 @@ class HMG_AI_CTA_Metabox {
                 <div class="hmg-cta-field">
                     <label for="hmg_ai_cta_img_align"><?php _e('Image Alignment', 'hmg-ai-blog-enhancer'); ?></label>
                     <select name="hmg_ai_cta_img_align" id="hmg_ai_cta_img_align">
-                        <option value="alignleft" <?php selected($custom_values['img_align'], 'alignleft'); ?>><?php _e('Left', 'hmg-ai-blog-enhancer'); ?></option>
-                        <option value="alignright" <?php selected($custom_values['img_align'], 'alignright'); ?>><?php _e('Right', 'hmg-ai-blog-enhancer'); ?></option>
-                        <option value="aligntop" <?php selected($custom_values['img_align'], 'aligntop'); ?>><?php _e('Top', 'hmg-ai-blog-enhancer'); ?></option>
-                        <option value="alignbottom" <?php selected($custom_values['img_align'], 'alignbottom'); ?>><?php _e('Bottom', 'hmg-ai-blog-enhancer'); ?></option>
-                        <option value="background" <?php selected($custom_values['img_align'], 'background'); ?>><?php _e('Background', 'hmg-ai-blog-enhancer'); ?></option>
+                        <option value="wpt-alignleft" <?php selected($custom_values['img_align'], 'wpt-alignleft'); ?>><?php _e('Left', 'hmg-ai-blog-enhancer'); ?></option>
+                        <option value="wpt-alignright" <?php selected($custom_values['img_align'], 'wpt-alignright'); ?>><?php _e('Right', 'hmg-ai-blog-enhancer'); ?></option>
+                        <option value="wpt-aligntop" <?php selected($custom_values['img_align'], 'wpt-aligntop'); ?>><?php _e('Top', 'hmg-ai-blog-enhancer'); ?></option>
+                        <option value="wpt-alignbottom" <?php selected($custom_values['img_align'], 'wpt-alignbottom'); ?>><?php _e('Bottom', 'hmg-ai-blog-enhancer'); ?></option>
+                        <option value="wpt-background" <?php selected($custom_values['img_align'], 'wpt-background'); ?>><?php _e('Background', 'hmg-ai-blog-enhancer'); ?></option>
                     </select>
                 </div>
 

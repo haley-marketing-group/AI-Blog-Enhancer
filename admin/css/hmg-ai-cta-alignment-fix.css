@@ -1,0 +1,61 @@
+/**
+ * CTA Color Picker Alignment Fix
+ * Ensures proper alignment of color picker elements
+ */
+
+/* Fix alignment for WPDK form rows with color pickers */
+.wpdk-form-field .wp-picker-container {
+    display: inline-flex !important;
+    align-items: center !important;
+    vertical-align: middle !important;
+}
+
+/* Ensure consistent height and alignment */
+.wpdk-form-field .wp-picker-container > * {
+    vertical-align: middle !important;
+}
+
+/* Color result button (the colored square) */
+.wpdk-form-field .wp-color-result {
+    display: inline-block !important;
+    height: 32px !important;
+    line-height: 30px !important;
+    margin-right: 10px !important;
+    vertical-align: middle !important;
+}
+
+/* Input wrapper */
+.wpdk-form-field .wp-picker-input-wrap {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    vertical-align: middle !important;
+}
+
+/* Color input field */
+.wpdk-form-field input.wp-color-picker {
+    height: 32px !important;
+    line-height: 32px !important;
+    vertical-align: middle !important;
+    margin: 0 !important;
+}
+
+/* Clear and Default buttons */
+.wpdk-form-field .wp-picker-clear,
+.wpdk-form-field .wp-picker-default {
+    height: 32px !important;
+    line-height: 30px !important;
+    vertical-align: middle !important;
+    margin: 0 !important;
+}
+
+/* Fix for table cell display */
+.wpdk-form-row .wpdk-form-field {
+    padding-top: 4px;
+}
+
+/* Ensure label alignment */
+.wpdk-form-row .wpdk-form-label {
+    padding-top: 8px;
+}
+
