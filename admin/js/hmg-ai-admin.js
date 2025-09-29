@@ -150,6 +150,11 @@
             // Test provider buttons
             $(document).on('click', '.hmg-ai-test-providers', this.testProviders.bind(this));
             
+            // Context-Aware AI handlers
+            $(document).on('click', '.hmg-ai-analyze-brand', this.analyzeBrandVoice.bind(this));
+            $(document).on('click', '.hmg-ai-clear-profile', this.clearBrandProfile.bind(this));
+            $('#use_brand_context').on('change', this.toggleBrandProfileSection);
+            
             // Settings page interactions
             $('input[name="spending_limit_type"]').on('change', this.toggleCustomLimit);
             
@@ -168,6 +173,11 @@
             // Refresh usage stats every 30 seconds if on editor page
             if ($('.hmg-ai-meta-box').length > 0) {
                 setInterval(this.refreshUsageStats.bind(this), 30000);
+            }
+            
+            // Initialize SEO features if SEO box exists
+            if ($('.hmg-ai-seo-box').length > 0) {
+                this.initSEO();
             }
         },
 
@@ -510,6 +520,9 @@
             const originalText = $button.html();
             const loadingText = `<span class="spinner is-active" style="float: none; margin: 0;"></span> Generating...`;
             
+            // Get selected provider
+            const selectedProvider = $('#hmg-ai-provider-select').val() || 'auto';
+            
             $button.prop('disabled', true).html(loadingText);
             this.hideNotices();
             
@@ -520,7 +533,8 @@
                     action: 'hmg_generate_' + type,
                     nonce: hmg_ai_ajax.nonce,
                     content: content,
-                    post_id: postId
+                    post_id: postId,
+                    provider: selectedProvider
                 },
                 success: (response) => {
 
@@ -779,8 +793,13 @@
             
             $button.addClass('processing');
             
-            const type = $button.data('type');
-            const shortcode = `[hmg_ai_${type}]`;
+            // Check if button has a complete shortcode or a type
+            let shortcode = $button.data('shortcode');
+            if (!shortcode) {
+                // Fallback to type for generated content buttons
+                const type = $button.data('type');
+                shortcode = type ? `[hmg_ai_${type}]` : '[hmg_ai_summarize]';
+            }
             
             if (typeof wp !== 'undefined' && wp.data && wp.data.select('core/editor')) {
                 // Gutenberg editor
@@ -810,7 +829,7 @@
                             content: currentContent + '\n\n' + shortcode
                         });
                     }
-                    this.showNotice('Shortcode added to editor!', 'success', type);
+                    this.showInlineMessage($button, 'Shortcode inserted!', 'success');
                 } catch (error) {
 
                     // Fallback method
@@ -818,16 +837,16 @@
                     wp.data.dispatch('core/editor').editPost({
                         content: currentContent + '\n\n' + shortcode
                     });
-                    this.showNotice('Shortcode added to editor!', 'success', type);
+                    this.showInlineMessage($button, 'Added to end of post!', 'success');
                 }
             } else if (typeof tinymce !== 'undefined' && tinymce.activeEditor) {
                 // Classic editor with TinyMCE
                 tinymce.activeEditor.execCommand('mceInsertContent', false, shortcode);
-                this.showNotice('Shortcode inserted!', 'success', type);
+                this.showInlineMessage($button, 'Shortcode inserted!', 'success');
             } else {
                 // Fallback: copy to clipboard
                 this.copyToClipboard(shortcode);
-                this.showNotice('Shortcode copied to clipboard!', 'success', type);
+                this.showInlineMessage($button, 'Copied to clipboard!', 'info');
             }
             
             // Remove processing class after a delay
@@ -840,7 +859,7 @@
          * Copy text to clipboard
          */
         copyToClipboard: function(text) {
-            const $temp = $('<input>');
+            const $temp = $('<textarea>');
             $('body').append($temp);
             $temp.val(text).select();
             document.execCommand('copy');
@@ -1209,6 +1228,681 @@
          */
         hideNotices: function() {
             $('.hmg-ai-notices').empty();
+        },
+        
+        /**
+         * Analyze brand voice from existing content
+         */
+        analyzeBrandVoice: function(e) {
+            e.preventDefault();
+            
+            const $button = $(e.currentTarget);
+            const $statusDiv = $('#hmg-ai-analysis-status');
+            const postCount = $('#analysis_post_count').val() || 10;
+            
+            // Disable button and show loading
+            $button.prop('disabled', true);
+            $button.html('<span class="dashicons dashicons-update hmg-ai-spinning"></span> Analyzing...');
+            
+            // Show status
+            $statusDiv.html(`
+                <div class="hmg-ai-info-box" style="background: #f0f8ff; border-left: 4px solid #2196F3;">
+                    <div style="display: flex; align-items: center;">
+                        <span class="dashicons dashicons-update hmg-ai-spinning" style="margin-right: 10px; color: #2196F3;"></span>
+                        <div>
+                            <strong>Analyzing your content...</strong><br>
+                            <small>Scanning ${postCount} recent posts to understand your brand voice</small>
+                        </div>
+                    </div>
+                </div>
+            `).show();
+            
+            $.ajax({
+                url: hmg_ai_ajax.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'hmg_analyze_brand_voice',
+                    nonce: hmg_ai_ajax.nonce,
+                    post_count: postCount
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Show success message
+                        $statusDiv.html(`
+                            <div class="hmg-ai-info-box" style="background: #d4edda; border-left: 4px solid #28a745;">
+                                <div style="display: flex; align-items: center;">
+                                    <span class="dashicons dashicons-yes-alt" style="margin-right: 10px; color: #28a745; font-size: 24px;"></span>
+                                    <div>
+                                        <strong>Analysis Complete!</strong><br>
+                                        <small>${response.data.message}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        `);
+                        
+                        // Reload page after 2 seconds to show updated profile
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 2000);
+                        
+                    } else {
+                        $statusDiv.html(`
+                            <div class="hmg-ai-info-box" style="background: #f8d7da; border-left: 4px solid #dc3545;">
+                                <div style="display: flex; align-items: center;">
+                                    <span class="dashicons dashicons-warning" style="margin-right: 10px; color: #dc3545;"></span>
+                                    <div>
+                                        <strong>Analysis Failed</strong><br>
+                                        <small>${response.data.message || 'An error occurred'}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        `);
+                    }
+                },
+                error: function() {
+                    $statusDiv.html(`
+                        <div class="hmg-ai-info-box" style="background: #f8d7da; border-left: 4px solid #dc3545;">
+                            <div style="display: flex; align-items: center;">
+                                <span class="dashicons dashicons-warning" style="margin-right: 10px; color: #dc3545;"></span>
+                                <div>
+                                    <strong>Connection Error</strong><br>
+                                    <small>Failed to analyze brand voice. Please try again.</small>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                },
+                complete: function() {
+                    // Re-enable button
+                    $button.prop('disabled', false);
+                    $button.html('<span class="dashicons dashicons-search" style="margin-right: 5px; margin-top: 2px;"></span> Analyze Brand Voice');
+                }
+            });
+        },
+        
+        /**
+         * Clear brand profile
+         */
+        clearBrandProfile: function(e) {
+            e.preventDefault();
+            
+            // Confirm with user
+            this.showModal(
+                'Confirm Clear Profile',
+                'Are you sure you want to clear your brand profile? This will remove all learned patterns about your writing style.',
+                'warning',
+                function() {
+                    const $button = $('.hmg-ai-clear-profile');
+                    const $statusDiv = $('#hmg-ai-analysis-status');
+                    
+                    // Disable button
+                    $button.prop('disabled', true);
+                    
+                    $.ajax({
+                        url: hmg_ai_ajax.ajax_url,
+                        type: 'POST',
+                        data: {
+                            action: 'hmg_clear_brand_profile',
+                            nonce: hmg_ai_ajax.nonce
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                // Show success message
+                                $statusDiv.html(`
+                                    <div class="hmg-ai-info-box" style="background: #d4edda; border-left: 4px solid #28a745;">
+                                        <div style="display: flex; align-items: center;">
+                                            <span class="dashicons dashicons-yes-alt" style="margin-right: 10px; color: #28a745;"></span>
+                                            <div>
+                                                <strong>Profile Cleared</strong><br>
+                                                <small>Brand profile has been removed successfully</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).show();
+                                
+                                // Reload page after 1.5 seconds
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1500);
+                            } else {
+                                HMGAIAdmin.showModal(
+                                    'Error',
+                                    response.data.message || 'Failed to clear profile',
+                                    'error'
+                                );
+                            }
+                        },
+                        error: function() {
+                            HMGAIAdmin.showModal(
+                                'Error',
+                                'Failed to clear brand profile. Please try again.',
+                                'error'
+                            );
+                        }
+                    });
+                }.bind(this)
+            );
+        },
+        
+        /**
+         * Toggle brand profile section visibility
+         */
+        toggleBrandProfileSection: function() {
+            const isChecked = $('#use_brand_context').is(':checked');
+            const $section = $('#brand-profile-section');
+            
+            if (isChecked) {
+                $section.slideDown();
+            } else {
+                $section.slideUp();
+            }
+        },
+        
+        /**
+         * Initialize SEO features
+         */
+        initSEO: function() {
+            // SEO button handlers
+            $(document).on('click', '.hmg-ai-analyze-seo', this.analyzeSEO.bind(this));
+            $(document).on('click', '.hmg-ai-optimize-seo', this.optimizeSEO.bind(this));
+            $(document).on('click', '.hmg-ai-generate-meta', this.generateMetaDescription.bind(this));
+            $(document).on('click', '.hmg-ai-extract-keywords', this.extractKeywords.bind(this));
+            $(document).on('click', '.hmg-ai-insert-link', this.insertInternalLink.bind(this));
+            $(document).on('click', '.hmg-ai-remove-keyword', this.removeKeyword.bind(this));
+            
+            // Character counters
+            $('#hmg-ai-meta-description').on('input', function() {
+                $('#meta-desc-count').text($(this).val().length + '/160');
+            });
+            
+            $('#hmg-ai-seo-title').on('input', function() {
+                $('#title-count').text($(this).val().length + '/60');
+            });
+            
+            // Keyword input
+            $('#hmg-ai-add-keyword').on('keypress', function(e) {
+                if (e.which === 13) { // Enter key
+                    e.preventDefault();
+                    HMGAIAdmin.addKeyword($(this).val());
+                    $(this).val('');
+                }
+            });
+            
+            // Auto-save SEO data on blur
+            $('#hmg-ai-meta-description, #hmg-ai-seo-title').on('blur', this.saveSEOData.bind(this));
+            $('#hmg-ai-enable-schema').on('change', this.saveSEOData.bind(this));
+        },
+        
+        /**
+         * Analyze SEO
+         */
+        analyzeSEO: function(e) {
+            e.preventDefault();
+            
+            const $button = $(e.currentTarget);
+            const postId = $('#post_ID').val();
+            const content = this.getPostContent();
+            const title = $('#title').val() || $('#post-title-0').val();
+            
+            // Show analyzing state in the score display
+            if ($('.hmg-ai-seo-not-analyzed').length) {
+                $('.hmg-ai-seo-not-analyzed').html(`
+                    <div class="seo-analyzing">
+                        <div class="analyzing-circle">
+                            <svg viewBox="0 0 200 200">
+                                <circle cx="100" cy="100" r="90" stroke="rgba(255,255,255,0.2)" stroke-width="10" fill="none"/>
+                                <circle cx="100" cy="100" r="90" 
+                                        stroke="url(#gradient)" 
+                                        stroke-width="10" 
+                                        fill="none"
+                                        stroke-dasharray="20 10"
+                                        class="analyzing-progress"/>
+                                <defs>
+                                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="analyzing-inner">
+                                <span class="dashicons dashicons-update hmg-ai-spinning"></span>
+                            </div>
+                        </div>
+                        <div class="analyzing-text">
+                            <h3>Analyzing Your Content...</h3>
+                            <div class="analyzing-steps">
+                                <div class="step active">
+                                    <span class="dashicons dashicons-yes"></span> Reading content
+                                </div>
+                                <div class="step">
+                                    <span class="dashicons dashicons-clock"></span> Checking readability
+                                </div>
+                                <div class="step">
+                                    <span class="dashicons dashicons-clock"></span> Extracting keywords
+                                </div>
+                                <div class="step">
+                                    <span class="dashicons dashicons-clock"></span> Generating suggestions
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+                
+                // Animate through steps
+                let currentStep = 0;
+                const steps = $('.analyzing-steps .step');
+                const stepInterval = setInterval(function() {
+                    if (currentStep < steps.length - 1) {
+                        currentStep++;
+                        $(steps[currentStep]).removeClass('step').addClass('step active');
+                        $(steps[currentStep]).find('.dashicons-clock').removeClass('dashicons-clock').addClass('dashicons-yes');
+                    }
+                }, 500);
+                
+                // Store interval to clear later
+                $button.data('stepInterval', stepInterval);
+            }
+            
+            // Disable button and show loading
+            $button.prop('disabled', true).html('<span class="dashicons dashicons-update hmg-ai-spinning"></span> Analyzing...');
+            
+            $.ajax({
+                url: hmg_ai_ajax.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'hmg_analyze_seo',
+                    nonce: hmg_ai_ajax.nonce,
+                    post_id: postId,
+                    content: content,
+                    title: title
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Update UI with SEO data
+                        this.updateSEODisplay(response.data);
+                        this.showModal('Success', 'SEO analysis complete!', 'success');
+                    } else {
+                        this.showModal('Error', response.data.message || 'Analysis failed', 'error');
+                    }
+                }.bind(this),
+                error: function() {
+                    this.showModal('Error', 'Failed to analyze SEO. Please try again.', 'error');
+                }.bind(this),
+                complete: function() {
+                    // Clear the step animation interval
+                    const stepInterval = $button.data('stepInterval');
+                    if (stepInterval) {
+                        clearInterval(stepInterval);
+                    }
+                    
+                    $button.prop('disabled', false).html('<span class="dashicons dashicons-search"></span> Analyze SEO');
+                }.bind(this)
+            });
+        },
+        
+        /**
+         * Auto-optimize SEO
+         */
+        optimizeSEO: function(e) {
+            e.preventDefault();
+            
+            const $button = $(e.currentTarget);
+            const postId = $('#post_ID').val();
+            const content = this.getPostContent();
+            const title = $('#title').val() || $('#post-title-0').val();
+            const keywords = this.getKeywords();
+            
+            // Disable button and show loading
+            $button.prop('disabled', true).html('<span class="dashicons dashicons-update hmg-ai-spinning"></span> Optimizing...');
+            
+            $.ajax({
+                url: hmg_ai_ajax.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'hmg_optimize_seo',
+                    nonce: hmg_ai_ajax.nonce,
+                    post_id: postId,
+                    content: content,
+                    title: title,
+                    keywords: keywords
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Update UI with optimized data
+                        this.updateSEODisplay(response.data);
+                        
+                        // Update content if optimized
+                        if (response.data.optimized_content) {
+                            // For block editor
+                            if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+                                wp.data.dispatch('core/editor').editPost({
+                                    content: response.data.optimized_content
+                                });
+                            }
+                        }
+                        
+                        this.showModal('Success', 'Content optimized for SEO!', 'success');
+                    } else {
+                        this.showModal('Error', response.data.message || 'Optimization failed', 'error');
+                    }
+                }.bind(this),
+                error: function() {
+                    this.showModal('Error', 'Failed to optimize SEO. Please try again.', 'error');
+                }.bind(this),
+                complete: function() {
+                    $button.prop('disabled', false).html('<span class="dashicons dashicons-admin-tools"></span> Auto-Optimize');
+                }
+            });
+        },
+        
+        /**
+         * Generate meta description
+         */
+        generateMetaDescription: function(e) {
+            e.preventDefault();
+            
+            const $button = $(e.currentTarget);
+            const postId = $('#post_ID').val();
+            const content = this.getPostContent();
+            const title = $('#title').val() || $('#post-title-0').val();
+            
+            // Disable button
+            $button.prop('disabled', true).html('<span class="dashicons dashicons-update hmg-ai-spinning"></span> Generating...');
+            
+            $.ajax({
+                url: hmg_ai_ajax.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'hmg_generate_meta_description',
+                    nonce: hmg_ai_ajax.nonce,
+                    post_id: postId,
+                    content: content,
+                    title: title
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $('#hmg-ai-meta-description').val(response.data.meta_description);
+                        $('#meta-desc-count').text(response.data.meta_description.length + '/160');
+                        this.saveSEOData();
+                    } else {
+                        this.showModal('Error', response.data.message || 'Failed to generate meta description', 'error');
+                    }
+                }.bind(this),
+                error: function() {
+                    this.showModal('Error', 'Failed to generate meta description', 'error');
+                }.bind(this),
+                complete: function() {
+                    $button.prop('disabled', false).html('<span class="dashicons dashicons-admin-generic"></span> Generate with AI');
+                }
+            });
+        },
+        
+        /**
+         * Extract keywords
+         */
+        extractKeywords: function(e) {
+            e.preventDefault();
+            
+            const $button = $(e.currentTarget);
+            const postId = $('#post_ID').val();
+            const content = this.getPostContent();
+            const title = $('#title').val() || $('#post-title-0').val();
+            
+            // Disable button
+            $button.prop('disabled', true).html('<span class="dashicons dashicons-update hmg-ai-spinning"></span> Extracting...');
+            
+            $.ajax({
+                url: hmg_ai_ajax.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'hmg_extract_keywords',
+                    nonce: hmg_ai_ajax.nonce,
+                    post_id: postId,
+                    content: content,
+                    title: title
+                },
+                success: function(response) {
+                    if (response.success && response.data.keywords) {
+                        // Clear existing keywords
+                        $('.hmg-ai-keyword-tag').remove();
+                        
+                        // Add new keywords
+                        response.data.keywords.forEach(function(keyword) {
+                            this.addKeyword(keyword);
+                        }.bind(this));
+                        
+                        this.saveSEOData();
+                    } else {
+                        this.showModal('Error', 'Failed to extract keywords', 'error');
+                    }
+                }.bind(this),
+                error: function() {
+                    this.showModal('Error', 'Failed to extract keywords', 'error');
+                }.bind(this),
+                complete: function() {
+                    $button.prop('disabled', false).html('<span class="dashicons dashicons-tag"></span> Extract Keywords');
+                }
+            });
+        },
+        
+        /**
+         * Add keyword
+         */
+        addKeyword: function(keyword) {
+            if (!keyword || keyword.trim() === '') return;
+            
+            // Check if already exists
+            const exists = $('.hmg-ai-keyword-tag').filter(function() {
+                return $(this).data('keyword') === keyword;
+            }).length > 0;
+            
+            if (!exists) {
+                const $tag = $('<span class="hmg-ai-keyword-tag">')
+                    .attr('data-keyword', keyword)
+                    .html(keyword + '<button type="button" class="hmg-ai-remove-keyword" data-keyword="' + keyword + '">×</button>');
+                
+                $('#hmg-ai-add-keyword').before($tag);
+                this.saveSEOData();
+            }
+        },
+        
+        /**
+         * Remove keyword
+         */
+        removeKeyword: function(e) {
+            e.preventDefault();
+            $(e.currentTarget).parent().remove();
+            this.saveSEOData();
+        },
+        
+        /**
+         * Get keywords
+         */
+        getKeywords: function() {
+            const keywords = [];
+            $('.hmg-ai-keyword-tag').each(function() {
+                keywords.push($(this).data('keyword'));
+            });
+            return keywords;
+        },
+        
+        /**
+         * Insert internal link
+         */
+        insertInternalLink: function(e) {
+            e.preventDefault();
+            
+            const $button = $(e.currentTarget);
+            const url = $button.data('url');
+            const title = $button.data('title');
+            const keyword = $button.data('keyword');
+            
+            // Create link HTML
+            const linkHtml = '<a href="' + url + '" title="' + title + '">' + keyword + '</a>';
+            
+            // For block editor
+            if (typeof wp !== 'undefined' && wp.data && wp.data.select) {
+                // Get current content
+                const content = wp.data.select('core/editor').getEditedPostContent();
+                
+                // Find first occurrence of keyword that's not already linked
+                const regex = new RegExp('(?![^<]*>)' + keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![^<]*</a>)', 'i');
+                const newContent = content.replace(regex, linkHtml);
+                
+                // Update content
+                wp.data.dispatch('core/editor').editPost({
+                    content: newContent
+                });
+                
+                $button.text('Inserted').prop('disabled', true);
+            } else {
+                // For classic editor
+                this.showModal('Info', 'Link copied: ' + linkHtml, 'info');
+            }
+        },
+        
+        /**
+         * Update SEO display
+         */
+        updateSEODisplay: function(data) {
+            // Update score
+            if (data.readability_score) {
+                const score = Math.round(data.readability_score);
+                const scoreClass = score >= 70 ? 'good' : (score >= 50 ? 'moderate' : 'poor');
+                
+                // Update score display
+                const scoreHtml = `
+                    <div class="hmg-ai-score-circle ${scoreClass}">
+                        <span class="score-value">${score}</span>
+                        <span class="score-label">/ 100</span>
+                    </div>
+                `;
+                $('.hmg-ai-seo-score-display').html(scoreHtml);
+                
+                // Enable optimize button
+                $('.hmg-ai-optimize-seo').prop('disabled', false);
+            }
+            
+            // Update meta description
+            if (data.meta_description) {
+                $('#hmg-ai-meta-description').val(data.meta_description);
+                $('#meta-desc-count').text(data.meta_description.length + '/160');
+            }
+            
+            // Update SEO title
+            if (data.seo_title) {
+                $('#hmg-ai-seo-title').val(data.seo_title);
+                $('#title-count').text(data.seo_title.length + '/60');
+            }
+            
+            // Update keywords
+            if (data.keywords && data.keywords.length > 0) {
+                $('.hmg-ai-keyword-tag').remove();
+                data.keywords.forEach(function(keyword) {
+                    this.addKeyword(keyword);
+                }.bind(this));
+            }
+            
+            // Update suggestions
+            if (data.suggestions && data.suggestions.length > 0) {
+                let suggestionsHtml = '<h4><span class="dashicons dashicons-lightbulb"></span> SEO Suggestions</h4><ul>';
+                
+                data.suggestions.forEach(function(suggestion) {
+                    const icon = suggestion.priority === 'high' ? 'warning' : (suggestion.priority === 'medium' ? 'info' : 'yes-alt');
+                    suggestionsHtml += '<li class="suggestion-' + suggestion.priority + '"><span class="dashicons dashicons-' + icon + '"></span> ' + suggestion.message + '</li>';
+                });
+                
+                suggestionsHtml += '</ul>';
+                
+                // Add or update suggestions section
+                if ($('.hmg-ai-seo-suggestions').length) {
+                    $('.hmg-ai-seo-suggestions').html(suggestionsHtml);
+                } else {
+                    $('<div class="hmg-ai-seo-suggestions">').html(suggestionsHtml).insertAfter('.hmg-ai-seo-field:last');
+                }
+            }
+            
+            // Update internal links
+            if (data.internal_links && data.internal_links.length > 0) {
+                let linksHtml = '<h4><span class="dashicons dashicons-admin-links"></span> Suggested Internal Links</h4><ul>';
+                
+                data.internal_links.forEach(function(link) {
+                    linksHtml += `
+                        <li>
+                            <a href="${link.url}" target="_blank">${link.title}</a>
+                            <span class="link-keyword">(${link.keyword})</span>
+                            <button type="button" class="button button-small hmg-ai-insert-link" 
+                                    data-url="${link.url}"
+                                    data-title="${link.title}"
+                                    data-keyword="${link.keyword}">
+                                Insert
+                            </button>
+                        </li>
+                    `;
+                });
+                
+                linksHtml += '</ul>';
+                
+                // Add or update links section
+                if ($('.hmg-ai-seo-internal-links').length) {
+                    $('.hmg-ai-seo-internal-links').html(linksHtml);
+                } else {
+                    $('<div class="hmg-ai-seo-internal-links">').html(linksHtml).insertAfter('.hmg-ai-seo-suggestions');
+                }
+            }
+        },
+        
+        /**
+         * Save SEO data
+         */
+        saveSEOData: function() {
+            const postId = $('#post_ID').val();
+            
+            if (!postId) return;
+            
+            const data = {
+                action: 'hmg_save_seo_data',
+                nonce: hmg_ai_ajax.nonce,
+                post_id: postId,
+                meta_description: $('#hmg-ai-meta-description').val(),
+                seo_title: $('#hmg-ai-seo-title').val(),
+                keywords: this.getKeywords(),
+                enable_schema: $('#hmg-ai-enable-schema').is(':checked') ? 1 : 0
+            };
+            
+            $.ajax({
+                url: hmg_ai_ajax.ajax_url,
+                type: 'POST',
+                data: data,
+                success: function(response) {
+                    // Silently save
+                },
+                error: function() {
+                    // Silently fail
+                }
+            });
+        },
+        
+        /**
+         * Get post content
+         */
+        getPostContent: function() {
+            // Try block editor first
+            if (typeof wp !== 'undefined' && wp.data && wp.data.select) {
+                try {
+                    return wp.data.select('core/editor').getEditedPostContent();
+                } catch (e) {
+                    // Fall through to classic editor
+                }
+            }
+            
+            // Try classic editor
+            if (typeof tinyMCE !== 'undefined' && tinyMCE.activeEditor) {
+                return tinyMCE.activeEditor.getContent();
+            }
+            
+            // Fall back to textarea
+            return $('#content').val() || '';
         },
         
         /**

@@ -191,6 +191,24 @@ class HMG_AI_Core {
         $this->loader->add_action('wp_ajax_hmg_save_ai_content', $plugin_admin, 'ajax_save_ai_content');
         $this->loader->add_action('wp_ajax_hmg_delete_content', $plugin_admin, 'ajax_delete_content');
         $this->loader->add_action('wp_ajax_hmg_ai_refresh_voices', $plugin_admin, 'ajax_refresh_voices');
+        
+        // Context-Aware AI handlers
+        $this->loader->add_action('wp_ajax_hmg_analyze_brand_voice', $plugin_admin, 'ajax_analyze_brand_voice');
+        $this->loader->add_action('wp_ajax_hmg_clear_brand_profile', $plugin_admin, 'ajax_clear_brand_profile');
+        
+        // SEO Optimizer handlers
+        $this->loader->add_action('wp_ajax_hmg_analyze_seo', $plugin_admin, 'ajax_analyze_seo');
+        $this->loader->add_action('wp_ajax_hmg_optimize_seo', $plugin_admin, 'ajax_optimize_seo');
+        $this->loader->add_action('wp_ajax_hmg_generate_meta_description', $plugin_admin, 'ajax_generate_meta_description');
+        $this->loader->add_action('wp_ajax_hmg_extract_keywords', $plugin_admin, 'ajax_extract_keywords');
+        $this->loader->add_action('wp_ajax_hmg_save_seo_data', $plugin_admin, 'ajax_save_seo_data');
+        
+        // Performance Optimizer handlers
+        $this->loader->add_action('wp_ajax_hmg_save_performance_settings', $plugin_admin, 'ajax_save_performance_settings');
+        $this->loader->add_action('wp_ajax_hmg_optimize_database', $plugin_admin, 'ajax_optimize_database');
+        $this->loader->add_action('wp_ajax_hmg_clear_all_caches', $plugin_admin, 'ajax_clear_all_caches');
+        $this->loader->add_action('wp_ajax_hmg_process_shortcode', $plugin_admin, 'ajax_process_shortcode');
+        $this->loader->add_action('wp_ajax_nopriv_hmg_process_shortcode', $plugin_admin, 'ajax_process_shortcode');
 
         // Plugin action links
         $this->loader->add_filter('plugin_action_links_' . HMG_AI_BLOG_ENHANCER_PLUGIN_BASENAME, $plugin_admin, 'add_action_links');
@@ -212,6 +230,21 @@ class HMG_AI_Core {
         // Enqueue public scripts and styles
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_styles');
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_scripts');
+        
+        // Performance Optimizer hooks
+        if (!class_exists('HMG_AI_Performance_Optimizer')) {
+            require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/class-performance-optimizer.php';
+        }
+        $performance = new HMG_AI_Performance_Optimizer();
+        
+        // Add lazy loading
+        $this->loader->add_filter('the_content', $performance, 'add_lazy_loading', 15);
+        
+        // Preload critical resources
+        $this->loader->add_action('wp_head', $performance, 'preload_critical_resources', 1);
+        
+        // Add cache headers
+        $this->loader->add_filter('wp_headers', $performance, 'add_cache_headers');
 
         // Register shortcodes
         $this->loader->add_action('init', $plugin_public, 'register_shortcodes');
@@ -221,6 +254,19 @@ class HMG_AI_Core {
 
         // Add structured data for FAQ
         $this->loader->add_action('wp_head', $plugin_public, 'add_faq_structured_data');
+        
+        // SEO Optimizer hooks
+        if (class_exists('HMG_AI_SEO_Optimizer')) {
+            $seo_optimizer = new HMG_AI_SEO_Optimizer();
+            $this->loader->add_action('wp_head', $seo_optimizer, 'add_meta_tags');
+            $this->loader->add_action('wp_head', $seo_optimizer, 'output_schema_markup');
+        } else {
+            // Load SEO Optimizer if not loaded
+            require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-seo-optimizer.php';
+            $seo_optimizer = new HMG_AI_SEO_Optimizer();
+            $this->loader->add_action('wp_head', $seo_optimizer, 'add_meta_tags');
+            $this->loader->add_action('wp_head', $seo_optimizer, 'output_schema_markup');
+        }
     }
 
     /**

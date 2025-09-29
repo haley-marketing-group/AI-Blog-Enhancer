@@ -134,19 +134,22 @@ class HMG_AI_Activator {
             KEY created_at (created_at)
         ) $charset_collate;";
 
-        // Generated content cache table
+        // Generated content cache table with correct column names
         $cache_table_name = $wpdb->prefix . 'hmg_ai_content_cache';
         
         $cache_sql = "CREATE TABLE $cache_table_name (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            content_hash varchar(64) NOT NULL,
-            feature_type varchar(50) NOT NULL,
-            generated_content longtext NOT NULL,
-            expires_at datetime NOT NULL,
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            cache_key varchar(32) NOT NULL,
+            content longtext NOT NULL,
+            content_type varchar(50) DEFAULT NULL,
+            provider varchar(50) DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            expires_at datetime NOT NULL,
             PRIMARY KEY (id),
-            UNIQUE KEY content_hash (content_hash, feature_type),
-            KEY expires_at (expires_at)
+            UNIQUE KEY cache_key (cache_key),
+            KEY expires_at (expires_at),
+            KEY content_type (content_type),
+            KEY provider (provider)
         ) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');

@@ -249,6 +249,25 @@ class HMG_AI_Admin {
             'hmg-ai-analytics',
             array($this, 'display_analytics_page')
         );
+        
+        // Performance submenu
+        add_submenu_page(
+            'hmg-ai-blog-enhancer',
+            __('Performance', 'hmg-ai-blog-enhancer'),
+            __('Performance', 'hmg-ai-blog-enhancer'),
+            'manage_options',
+            'hmg-ai-performance',
+            array($this, 'display_performance_page')
+        );
+    }
+    
+    /**
+     * Display the performance page
+     *
+     * @since    1.4.0
+     */
+    public function display_performance_page() {
+        include HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'admin/partials/performance-dashboard.php';
     }
 
     /**
@@ -352,6 +371,30 @@ class HMG_AI_Admin {
                 }
             }
         }
+        
+        // Add SEO Optimizer meta box
+        add_meta_box(
+            'hmg-ai-seo-optimizer',
+            __('SEO Optimizer', 'hmg-ai-blog-enhancer'),
+            array($this, 'display_seo_optimizer_meta_box'),
+            array('post'),
+            'normal',
+            'high',
+            array(
+                '__block_editor_compatible_meta_box' => true,
+                '__back_compat_meta_box' => false
+            )
+        );
+    }
+    
+    /**
+     * Display SEO Optimizer meta box
+     *
+     * @since    1.3.0
+     * @param    WP_Post    $post    Current post object.
+     */
+    public function display_seo_optimizer_meta_box($post) {
+        include HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'admin/partials/meta-box-seo-optimizer.php';
     }
 
     /**
@@ -483,6 +526,7 @@ class HMG_AI_Admin {
             // Get content and post ID
             $content = sanitize_textarea_field($_POST['content'] ?? '');
             $post_id = (int) ($_POST['post_id'] ?? 0);
+            $provider = sanitize_text_field($_POST['provider'] ?? 'auto');
 
             if (empty($content)) {
                 wp_send_json_error(array(
@@ -491,8 +535,14 @@ class HMG_AI_Admin {
                 return;
             }
 
+            // Prepare options for AI service manager
+            $options = array();
+            if ($provider !== 'auto') {
+                $options['provider'] = $provider;
+            }
+
             // Generate takeaways using AI service manager
-            $result = $this->ai_service_manager->generate_content('takeaways', $content, $post_id);
+            $result = $this->ai_service_manager->generate_content('takeaways', $content, $post_id, $options);
 
         if ($result['success']) {
             // Save generated content as post meta
@@ -565,6 +615,7 @@ class HMG_AI_Admin {
             // Get content and post ID
             $content = sanitize_textarea_field($_POST['content'] ?? '');
             $post_id = (int) ($_POST['post_id'] ?? 0);
+            $provider = sanitize_text_field($_POST['provider'] ?? 'auto');
 
             if (empty($content)) {
                 wp_send_json_error(array(
@@ -573,8 +624,14 @@ class HMG_AI_Admin {
                 return;
             }
 
+            // Prepare options for AI service manager
+            $options = array();
+            if ($provider !== 'auto') {
+                $options['provider'] = $provider;
+            }
+
             // Generate FAQ using AI service manager
-            $result = $this->ai_service_manager->generate_content('faq', $content, $post_id);
+            $result = $this->ai_service_manager->generate_content('faq', $content, $post_id, $options);
 
         if ($result['success']) {
             // Save generated content as post meta
@@ -647,6 +704,7 @@ class HMG_AI_Admin {
             // Get content and post ID
             $content = sanitize_textarea_field($_POST['content'] ?? '');
             $post_id = (int) ($_POST['post_id'] ?? 0);
+            $provider = sanitize_text_field($_POST['provider'] ?? 'auto');
 
             if (empty($content)) {
                 wp_send_json_error(array(
@@ -655,8 +713,14 @@ class HMG_AI_Admin {
                 return;
             }
 
+            // Prepare options for AI service manager
+            $options = array();
+            if ($provider !== 'auto') {
+                $options['provider'] = $provider;
+            }
+
             // Generate TOC using AI service manager
-            $result = $this->ai_service_manager->generate_content('toc', $content, $post_id);
+            $result = $this->ai_service_manager->generate_content('toc', $content, $post_id, $options);
 
             if ($result['success']) {
                 // Save generated content as post meta
@@ -1202,5 +1266,543 @@ class HMG_AI_Admin {
                 'message' => sprintf(__('Error: %s', 'hmg-ai-blog-enhancer'), $e->getMessage())
             ));
         }
+    }
+    
+    /**
+     * AJAX handler for analyzing brand voice
+     *
+     * @since    1.2.0
+     */
+    public function ajax_analyze_brand_voice() {
+        // Check nonce
+        if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
+            wp_send_json_error(array(
+                'message' => __('Security check failed', 'hmg-ai-blog-enhancer')
+            ));
+            return;
+        }
+        
+        // Check if user has permission
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array(
+                'message' => __('You do not have permission to analyze brand voice', 'hmg-ai-blog-enhancer')
+            ));
+            return;
+        }
+        
+        // Get post count parameter
+        $post_count = isset($_POST['post_count']) ? intval($_POST['post_count']) : 10;
+        $post_count = max(1, min(100, $post_count)); // Limit between 1 and 100
+        
+        try {
+            // Load Context Analyzer
+            if (!class_exists('HMG_AI_Context_Analyzer')) {
+                require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-context-analyzer.php';
+            }
+            
+            $analyzer = new HMG_AI_Context_Analyzer();
+            $result = $analyzer->analyze_website_content($post_count);
+            
+            if ($result['success']) {
+                wp_send_json_success(array(
+                    'message' => sprintf(
+                        __('Successfully analyzed %d posts and created brand profile', 'hmg-ai-blog-enhancer'),
+                        $result['posts_analyzed']
+                    ),
+                    'brand_profile' => $result['brand_profile']
+                ));
+            } else {
+                wp_send_json_error(array(
+                    'message' => $result['message'] ?? __('Failed to analyze content', 'hmg-ai-blog-enhancer')
+                ));
+            }
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array(
+                'message' => sprintf(__('Analysis failed: %s', 'hmg-ai-blog-enhancer'), $e->getMessage())
+            ));
+        }
+    }
+    
+    /**
+     * AJAX handler for clearing brand profile
+     *
+     * @since    1.2.0
+     */
+    public function ajax_clear_brand_profile() {
+        // Check nonce
+        if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
+            wp_send_json_error(array(
+                'message' => __('Security check failed', 'hmg-ai-blog-enhancer')
+            ));
+            return;
+        }
+        
+        // Check if user has permission
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array(
+                'message' => __('You do not have permission to clear brand profile', 'hmg-ai-blog-enhancer')
+            ));
+            return;
+        }
+        
+        try {
+            // Load Context Analyzer
+            if (!class_exists('HMG_AI_Context_Analyzer')) {
+                require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-context-analyzer.php';
+            }
+            
+            $analyzer = new HMG_AI_Context_Analyzer();
+            $analyzer->clear_brand_profile();
+            
+            wp_send_json_success(array(
+                'message' => __('Brand profile cleared successfully', 'hmg-ai-blog-enhancer')
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array(
+                'message' => sprintf(__('Failed to clear profile: %s', 'hmg-ai-blog-enhancer'), $e->getMessage())
+            ));
+        }
+    }
+    
+    /**
+     * AJAX handler for analyzing SEO
+     *
+     * @since    1.3.0
+     */
+    public function ajax_analyze_seo() {
+        // Check nonce
+        if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => __('Security check failed', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        // Check permission
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        $post_id = intval($_POST['post_id'] ?? 0);
+        $content = wp_kses_post($_POST['content'] ?? '');
+        $title = sanitize_text_field($_POST['title'] ?? '');
+        
+        if (!$post_id) {
+            wp_send_json_error(array('message' => __('Invalid post ID', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        try {
+            // Load SEO Optimizer
+            if (!class_exists('HMG_AI_SEO_Optimizer')) {
+                require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-seo-optimizer.php';
+            }
+            
+            $seo_optimizer = new HMG_AI_SEO_Optimizer();
+            $result = $seo_optimizer->optimize_content($content, $title, $post_id);
+            
+            if ($result['success']) {
+                wp_send_json_success($result);
+            } else {
+                wp_send_json_error(array('message' => $result['error'] ?? __('SEO analysis failed', 'hmg-ai-blog-enhancer')));
+            }
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => sprintf(__('Error: %s', 'hmg-ai-blog-enhancer'), $e->getMessage())));
+        }
+    }
+    
+    /**
+     * AJAX handler for auto-optimizing SEO
+     *
+     * @since    1.3.0
+     */
+    public function ajax_optimize_seo() {
+        // Check nonce
+        if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => __('Security check failed', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        // Check permission
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        $post_id = intval($_POST['post_id'] ?? 0);
+        $content = wp_kses_post($_POST['content'] ?? '');
+        $title = sanitize_text_field($_POST['title'] ?? '');
+        $keywords = array_map('sanitize_text_field', $_POST['keywords'] ?? array());
+        
+        if (!$post_id) {
+            wp_send_json_error(array('message' => __('Invalid post ID', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        try {
+            // Load SEO Optimizer
+            if (!class_exists('HMG_AI_SEO_Optimizer')) {
+                require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-seo-optimizer.php';
+            }
+            
+            $seo_optimizer = new HMG_AI_SEO_Optimizer();
+            $result = $seo_optimizer->optimize_content($content, $title, $post_id, array('keywords' => $keywords));
+            
+            if ($result['success']) {
+                // Also update post content if optimized
+                if ($result['optimized_content'] !== $content) {
+                    wp_update_post(array(
+                        'ID' => $post_id,
+                        'post_content' => $result['optimized_content']
+                    ));
+                }
+                
+                wp_send_json_success($result);
+            } else {
+                wp_send_json_error(array('message' => $result['error'] ?? __('Optimization failed', 'hmg-ai-blog-enhancer')));
+            }
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => sprintf(__('Error: %s', 'hmg-ai-blog-enhancer'), $e->getMessage())));
+        }
+    }
+    
+    /**
+     * AJAX handler for generating meta description
+     *
+     * @since    1.3.0
+     */
+    public function ajax_generate_meta_description() {
+        // Check nonce
+        if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => __('Security check failed', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        // Check permission
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        $post_id = intval($_POST['post_id'] ?? 0);
+        $content = wp_kses_post($_POST['content'] ?? '');
+        $title = sanitize_text_field($_POST['title'] ?? '');
+        
+        try {
+            // Use AI to generate meta description
+            if (class_exists('HMG_AI_Service_Manager')) {
+                $ai_service = new HMG_AI_Service_Manager();
+                
+                $prompt = sprintf(
+                    "Title: %s\n\nContent: %s\n\nGenerate a compelling meta description (max 155 characters) that summarizes this content and encourages clicks from search results.",
+                    $title,
+                    substr(wp_strip_all_tags($content), 0, 1000)
+                );
+                
+                $result = $ai_service->generate_content('summary', $prompt, $post_id);
+                
+                if ($result['success']) {
+                    $meta_desc = $result['content'];
+                    if (strlen($meta_desc) > 155) {
+                        $meta_desc = substr($meta_desc, 0, 152) . '...';
+                    }
+                    
+                    // Save to post meta
+                    update_post_meta($post_id, '_hmg_ai_meta_description', $meta_desc);
+                    
+                    wp_send_json_success(array(
+                        'meta_description' => $meta_desc
+                    ));
+                } else {
+                    wp_send_json_error(array('message' => $result['error'] ?? __('Failed to generate meta description', 'hmg-ai-blog-enhancer')));
+                }
+            } else {
+                wp_send_json_error(array('message' => __('AI service not available', 'hmg-ai-blog-enhancer')));
+            }
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => sprintf(__('Error: %s', 'hmg-ai-blog-enhancer'), $e->getMessage())));
+        }
+    }
+    
+    /**
+     * AJAX handler for extracting keywords
+     *
+     * @since    1.3.0
+     */
+    public function ajax_extract_keywords() {
+        // Check nonce
+        if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => __('Security check failed', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        // Check permission
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        $post_id = intval($_POST['post_id'] ?? 0);
+        $content = wp_kses_post($_POST['content'] ?? '');
+        $title = sanitize_text_field($_POST['title'] ?? '');
+        
+        try {
+            // Load SEO Optimizer
+            if (!class_exists('HMG_AI_SEO_Optimizer')) {
+                require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-seo-optimizer.php';
+            }
+            
+            $seo_optimizer = new HMG_AI_SEO_Optimizer();
+            
+            // Use reflection to access private method (or we could make it public)
+            $reflection = new ReflectionClass($seo_optimizer);
+            $method = $reflection->getMethod('extract_keywords');
+            $method->setAccessible(true);
+            
+            $keywords = $method->invoke($seo_optimizer, $title . ' ' . wp_strip_all_tags($content));
+            
+            // Save to post meta
+            if ($post_id) {
+                update_post_meta($post_id, '_hmg_ai_keywords', $keywords);
+            }
+            
+            wp_send_json_success(array(
+                'keywords' => $keywords
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => sprintf(__('Error: %s', 'hmg-ai-blog-enhancer'), $e->getMessage())));
+        }
+    }
+    
+    /**
+     * AJAX handler for saving SEO data
+     *
+     * @since    1.3.0
+     */
+    public function ajax_save_seo_data() {
+        // Check nonce
+        if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => __('Security check failed', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        // Check permission
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        $post_id = intval($_POST['post_id'] ?? 0);
+        
+        if (!$post_id) {
+            wp_send_json_error(array('message' => __('Invalid post ID', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        // Save all SEO fields
+        if (isset($_POST['meta_description'])) {
+            update_post_meta($post_id, '_hmg_ai_meta_description', sanitize_textarea_field($_POST['meta_description']));
+        }
+        
+        if (isset($_POST['seo_title'])) {
+            update_post_meta($post_id, '_hmg_ai_seo_title', sanitize_text_field($_POST['seo_title']));
+        }
+        
+        if (isset($_POST['keywords'])) {
+            $keywords = array_map('sanitize_text_field', (array)$_POST['keywords']);
+            update_post_meta($post_id, '_hmg_ai_keywords', $keywords);
+        }
+        
+        if (isset($_POST['enable_schema'])) {
+            $enable_schema = (bool)$_POST['enable_schema'];
+            if ($enable_schema) {
+                // Generate and save schema markup
+                if (!class_exists('HMG_AI_SEO_Optimizer')) {
+                    require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-seo-optimizer.php';
+                }
+                
+                $seo_optimizer = new HMG_AI_SEO_Optimizer();
+                $reflection = new ReflectionClass($seo_optimizer);
+                $method = $reflection->getMethod('generate_schema_markup');
+                $method->setAccessible(true);
+                
+                $content = get_post_field('post_content', $post_id);
+                $title = get_the_title($post_id);
+                $schema = $method->invoke($seo_optimizer, $content, $title, $post_id);
+                
+                update_post_meta($post_id, '_hmg_ai_schema_markup', $schema);
+            } else {
+                delete_post_meta($post_id, '_hmg_ai_schema_markup');
+            }
+        }
+        
+        wp_send_json_success(array(
+            'message' => __('SEO data saved successfully', 'hmg-ai-blog-enhancer')
+        ));
+    }
+    
+    /**
+     * AJAX handler for saving performance settings
+     *
+     * @since    1.4.0
+     */
+    public function ajax_save_performance_settings() {
+        // Check nonce
+        if (!check_ajax_referer('hmg_ai_performance_settings', 'hmg_ai_performance_nonce', false)) {
+            wp_send_json_error(array('message' => __('Security check failed', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        // Check permission
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        // Get current options
+        $options = get_option('hmg_ai_blog_enhancer_options', array());
+        
+        // Update performance settings
+        $options['minify_css'] = isset($_POST['minify_css']);
+        $options['minify_js'] = isset($_POST['minify_js']);
+        $options['concatenate_assets'] = isset($_POST['concatenate_assets']);
+        $options['enable_lazy_load'] = isset($_POST['enable_lazy_load']);
+        $options['enable_async_js'] = isset($_POST['enable_async_js']);
+        $options['enable_object_cache'] = isset($_POST['enable_object_cache']);
+        $options['enable_fragment_cache'] = isset($_POST['enable_fragment_cache']);
+        $options['enable_critical_css'] = isset($_POST['enable_critical_css']);
+        $options['browser_cache_ttl'] = intval($_POST['browser_cache_ttl'] ?? 86400);
+        $options['api_cache_ttl'] = intval($_POST['api_cache_ttl'] ?? 3600);
+        $options['cdn_enabled'] = isset($_POST['cdn_enabled']);
+        $options['cdn_url'] = sanitize_url($_POST['cdn_url'] ?? '');
+        $options['max_concurrent_loads'] = intval($_POST['max_concurrent_loads'] ?? 2);
+        
+        // Save options
+        update_option('hmg_ai_blog_enhancer_options', $options);
+        
+        wp_send_json_success(array(
+            'message' => __('Performance settings saved successfully', 'hmg-ai-blog-enhancer')
+        ));
+    }
+    
+    /**
+     * AJAX handler for optimizing database
+     *
+     * @since    1.4.0
+     */
+    public function ajax_optimize_database() {
+        // Check nonce
+        if (!check_ajax_referer('hmg_ai_performance', 'nonce', false)) {
+            wp_send_json_error(array('message' => __('Security check failed', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        // Check permission
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        try {
+            // Load Performance Optimizer
+            if (!class_exists('HMG_AI_Performance_Optimizer')) {
+                require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/class-performance-optimizer.php';
+            }
+            
+            $performance = new HMG_AI_Performance_Optimizer();
+            $performance->optimize_database('all');
+            
+            wp_send_json_success(array(
+                'message' => __('Database optimized successfully', 'hmg-ai-blog-enhancer')
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler for clearing all caches
+     *
+     * @since    1.4.0
+     */
+    public function ajax_clear_all_caches() {
+        // Check nonce
+        if (!check_ajax_referer('hmg_ai_performance', 'nonce', false)) {
+            wp_send_json_error(array('message' => __('Security check failed', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        // Check permission
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        try {
+            global $wpdb;
+            
+            // Clear content cache
+            $cache_table = $wpdb->prefix . 'hmg_ai_content_cache';
+            $wpdb->query("TRUNCATE TABLE $cache_table");
+            
+            // Clear transient cache
+            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_hmg_ai_%'");
+            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_hmg_ai_%'");
+            
+            // Clear fragment cache
+            delete_transient('hmg_ai_fragment_cache');
+            
+            // Clear minified assets cache
+            $upload_dir = wp_upload_dir();
+            $cache_dir = $upload_dir['basedir'] . '/hmg-ai-cache';
+            if (file_exists($cache_dir)) {
+                $files = glob($cache_dir . '/*');
+                foreach ($files as $file) {
+                    if (is_file($file)) {
+                        unlink($file);
+                    }
+                }
+            }
+            
+            wp_send_json_success(array(
+                'message' => __('All caches cleared successfully', 'hmg-ai-blog-enhancer')
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler for processing shortcodes (for lazy loading)
+     *
+     * @since    1.4.0
+     */
+    public function ajax_process_shortcode() {
+        // Check nonce
+        if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => __('Security check failed', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        $shortcode = sanitize_text_field($_POST['shortcode'] ?? '');
+        
+        if (empty($shortcode)) {
+            wp_send_json_error(array('message' => __('No shortcode provided', 'hmg-ai-blog-enhancer')));
+            return;
+        }
+        
+        // Process the shortcode
+        $html = do_shortcode($shortcode);
+        
+        wp_send_json_success(array(
+            'html' => $html
+        ));
     }
 } 

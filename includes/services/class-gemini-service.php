@@ -229,7 +229,7 @@ Please provide a clear, professional summary without HTML formatting.'
      * @param    int       $post_id         The post ID for tracking.
      * @return   array                      Generation result with content or error.
      */
-    public function generate_content($content_type, $content, $post_id = 0) {
+    public function generate_content($content_type, $content, $post_id = 0, $options = array()) {
         // Check authentication
         $auth_status = $this->auth_service->get_auth_status();
         if (!$auth_status['authenticated']) {
@@ -297,11 +297,11 @@ Please provide a clear, professional summary without HTML formatting.'
         }
 
         // Generate content with Gemini
-        $result = $this->call_gemini_api($content_type, $cleaned_content);
+        $result = $this->call_gemini_api($content_type, $cleaned_content, $options);
         
         if ($result['success']) {
-            // Cache the result
-            $this->cache_content($cache_key, $result['content']);
+            // Cache the result with content type and provider
+            $this->cache_content($cache_key, $result['content'], $content_type, 'gemini');
             
             // Debug logging
             error_log('HMG AI Gemini: Calling record_usage for ' . $content_type . ' with ' . ($result['tokens_used'] ?? 0) . ' tokens');
@@ -339,9 +339,15 @@ Please provide a clear, professional summary without HTML formatting.'
      * @param    string    $content         The cleaned content to analyze.
      * @return   array                      API call result.
      */
-    private function call_gemini_api($content_type, $content) {
+    private function call_gemini_api($content_type, $content, $options = array()) {
         $prompt = $this->prompts[$content_type];
-        $user_prompt = str_replace('{content}', $content, $prompt['user']);
+        
+        // Add brand context if provided
+        $user_prompt = $prompt['user'];
+        if (!empty($options['brand_context'])) {
+            $user_prompt = "Important: " . $options['brand_context'] . "\n\n" . $user_prompt;
+        }
+        $user_prompt = str_replace('{content}', $content, $user_prompt);
 
         // Build request data with 2025 API structure
         $request_data = array(
@@ -608,11 +614,13 @@ Please provide a clear, professional summary without HTML formatting.'
      * Cache generated content
      *
      * @since    1.0.0
-     * @param    string    $cache_key    Cache key.
-     * @param    string    $content      Content to cache.
-     * @return   bool                    Whether caching was successful.
+     * @param    string    $cache_key      Cache key.
+     * @param    string    $content        Content to cache.
+     * @param    string    $content_type   Type of content.
+     * @param    string    $provider       Provider name.
+     * @return   bool                      Whether caching was successful.
      */
-    private function cache_content($cache_key, $content) {
+    private function cache_content($cache_key, $content, $content_type = null, $provider = 'gemini') {
         global $wpdb;
         
         $options = get_option('hmg_ai_blog_enhancer_options', array());
@@ -630,10 +638,12 @@ Please provide a clear, professional summary without HTML formatting.'
             array(
                 'cache_key' => $cache_key,
                 'content' => $content,
+                'content_type' => $content_type,
+                'provider' => $provider,
                 'created_at' => current_time('mysql'),
                 'expires_at' => $expires_at
             ),
-            array('%s', '%s', '%s', '%s')
+            array('%s', '%s', '%s', '%s', '%s', '%s')
         );
     }
 

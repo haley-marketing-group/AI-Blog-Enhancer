@@ -127,6 +127,24 @@ class HMG_AI_Public {
             
             // Ensure jQuery easing is available
             wp_enqueue_script('jquery-effects-core');
+            
+            // Enqueue lazy loading script if enabled
+            $options = get_option('hmg_ai_blog_enhancer_options', array());
+            if ($options['enable_lazy_load'] ?? true) {
+                wp_enqueue_script(
+                    $this->plugin_name . '-lazy-load',
+                    HMG_AI_BLOG_ENHANCER_PLUGIN_URL . 'public/js/hmg-ai-lazy-load.js',
+                    array('jquery'),
+                    $this->version,
+                    true
+                );
+                
+                // Add AJAX data for lazy loading
+                wp_localize_script($this->plugin_name . '-lazy-load', 'hmg_ai_ajax', array(
+                    'ajax_url' => admin_url('admin-ajax.php'),
+                    'nonce' => wp_create_nonce('hmg-ai-ajax-nonce')
+                ));
+            }
         }
     }
 
@@ -140,6 +158,7 @@ class HMG_AI_Public {
         add_shortcode('hmg_ai_faq', array($this, 'render_faq_shortcode'));
         add_shortcode('hmg_ai_toc', array($this, 'render_toc_shortcode'));
         add_shortcode('hmg_ai_audio', array($this, 'render_audio_shortcode'));
+        add_shortcode('hmg_ai_summarize', array($this, 'render_summarize_shortcode'));
     }
 
     /**
@@ -820,6 +839,104 @@ class HMG_AI_Public {
         return $toc;
     }
 
+    /**
+     * Render summarize shortcode
+     *
+     * @since    1.5.0
+     * @param    array    $atts    Shortcode attributes
+     * @return   string           The shortcode output
+     */
+    public function render_summarize_shortcode($atts) {
+        // Parse attributes
+        $atts = shortcode_atts(array(
+            'services' => 'chatgpt,perplexity,claude',
+            'label' => __('Summarize this blog post with:', 'hmg-ai-blog-enhancer'),
+            'style' => 'buttons', // buttons or links
+            'align' => 'left' // left, center, right
+        ), $atts, 'hmg_ai_summarize');
+        
+        // Get the current post URL
+        global $post;
+        if (!$post) {
+            return '';
+        }
+        
+        $post_url = get_permalink($post->ID);
+        $post_title = get_the_title($post->ID);
+        
+        // Parse services
+        $services = array_map('trim', explode(',', $atts['services']));
+        
+        // Service configurations
+        $service_configs = array(
+            'chatgpt' => array(
+                'name' => 'ChatGPT',
+                'url' => 'https://chat.openai.com/?q=' . urlencode('Summarize this article: ' . $post_url),
+                'icon' => '🤖',
+                'color' => '#74aa9c'
+            ),
+            'perplexity' => array(
+                'name' => 'Perplexity',
+                'url' => 'https://www.perplexity.ai/?q=' . urlencode('Summarize this article: ' . $post_url),
+                'icon' => '🔍',
+                'color' => '#20808d'
+            ),
+            'claude' => array(
+                'name' => 'Claude',
+                'url' => 'https://claude.ai/new?q=' . urlencode('Please summarize this article: ' . $post_url),
+                'icon' => '🎭',
+                'color' => '#d97757'
+            ),
+            'gemini' => array(
+                'name' => 'Gemini',
+                'url' => 'https://gemini.google.com/app?prompt=' . urlencode('Summarize this article: ' . $post_url),
+                'icon' => '✨',
+                'color' => '#4285f4'
+            )
+        );
+        
+        // Build output
+        $output = '<div class="hmg-ai-summarize-container" data-align="' . esc_attr($atts['align']) . '">';
+        
+        if (!empty($atts['label'])) {
+            $output .= '<p class="hmg-ai-summarize-label">' . esc_html($atts['label']) . '</p>';
+        }
+        
+        $output .= '<div class="hmg-ai-summarize-buttons">';
+        
+        foreach ($services as $service) {
+            $service = strtolower($service);
+            if (isset($service_configs[$service])) {
+                $config = $service_configs[$service];
+                
+                if ($atts['style'] === 'buttons') {
+                    $output .= sprintf(
+                        '<a href="%s" target="_blank" rel="noopener" class="hmg-ai-summarize-btn hmg-ai-summarize-%s">
+                            <span class="hmg-ai-service-name">%s</span>
+                        </a>',
+                        esc_url($config['url']),
+                        esc_attr($service),
+                        esc_html($config['name'])
+                    );
+                } else {
+                    $output .= sprintf(
+                        '<a href="%s" target="_blank" rel="noopener" class="hmg-ai-summarize-link hmg-ai-summarize-%s">
+                            %s
+                        </a>',
+                        esc_url($config['url']),
+                        esc_attr($service),
+                        esc_html($config['name'])
+                    );
+                }
+            }
+        }
+        
+        $output .= '</div>';
+        $output .= '</div>';
+        
+        return $output;
+    }
+    
     /**
      * Add anchor IDs to headings in content
      *

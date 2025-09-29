@@ -77,8 +77,8 @@ if (isset($_POST['submit']) && wp_verify_nonce($_POST['hmg_ai_settings_nonce'], 
     
     // Model selections
     $new_options['gemini_model'] = sanitize_text_field($_POST['gemini_model'] ?? 'gemini-1.5-flash');
-    $new_options['openai_model'] = sanitize_text_field($_POST['openai_model'] ?? 'gpt-3.5-turbo');
-    $new_options['claude_model'] = sanitize_text_field($_POST['claude_model'] ?? 'claude-3-haiku-20240307');
+    $new_options['openai_model'] = sanitize_text_field($_POST['openai_model'] ?? 'gpt-4o-mini');
+    $new_options['claude_model'] = sanitize_text_field($_POST['claude_model'] ?? 'claude-3-5-sonnet-20241022');
     
     // Spending limit settings
     $new_options['spending_limit_type'] = sanitize_text_field($_POST['spending_limit_type'] ?? 'moderate');
@@ -97,6 +97,9 @@ if (isset($_POST['submit']) && wp_verify_nonce($_POST['hmg_ai_settings_nonce'], 
     
     // Usage tracking
     $new_options['usage_tracking'] = isset($_POST['usage_tracking']);
+    
+    // Context-Aware AI
+    $new_options['use_brand_context'] = isset($_POST['use_brand_context']);
     
     // Preserve existing brand colors and typography
     $new_options['brand_colors'] = $options['brand_colors'] ?? array(
@@ -460,6 +463,17 @@ if (isset($_POST['submit']) && wp_verify_nonce($_POST['hmg_ai_settings_nonce'], 
                     </p>
                 </div>
                 
+                <!-- Test All AI Providers Button -->
+                <div style="margin-top: 25px; margin-bottom: 25px; padding: 20px; background: #f8f9fa; border-radius: 5px; text-align: center;">
+                    <button type="button" class="button button-primary hmg-ai-test-providers" style="padding: 8px 20px;">
+                        <span class="dashicons dashicons-admin-plugins" style="margin-right: 5px; margin-top: 2px;"></span>
+                        <?php _e('Test All AI Providers', 'hmg-ai-blog-enhancer'); ?>
+                    </button>
+                    <p class="description" style="margin-top: 10px; margin-bottom: 0;">
+                        <?php _e('Click to verify connectivity for all configured AI providers (Gemini, OpenAI, Claude)', 'hmg-ai-blog-enhancer'); ?>
+                    </p>
+                </div>
+                
                 <!-- Text-to-Speech Settings (Eleven Labs) -->
                 <div style="border-top: 2px solid var(--hmg-royal-blue); padding-top: 20px; margin-top: 30px;">
                     <h4 style="color: var(--hmg-royal-blue); margin-bottom: 15px;">
@@ -674,23 +688,23 @@ if (isset($_POST['submit']) && wp_verify_nonce($_POST['hmg_ai_settings_nonce'], 
                         <div class="hmg-ai-form-group">
                             <label for="openai_model"><?php _e('Model', 'hmg-ai-blog-enhancer'); ?></label>
                             <select id="openai_model" name="openai_model" style="width: 100%;">
-                                <option value="o4-mini" <?php selected($options['openai_model'] ?? 'o4-mini', 'o4-mini'); ?>>
-                                    o4-mini (Best Value Reasoning - $0.15/$0.60)
+                                <option value="gpt-5-ultra" <?php selected($options['openai_model'] ?? 'gpt-4o-mini', 'gpt-5-ultra'); ?>>
+                                    GPT-5 Ultra (Most Advanced - $15.00/$45.00)
                                 </option>
-                                <option value="gpt-4o-mini" <?php selected($options['openai_model'] ?? 'o4-mini', 'gpt-4o-mini'); ?>>
-                                    GPT-4o Mini (Fast & Affordable - $0.15/$0.60)
+                                <option value="gpt-5" <?php selected($options['openai_model'] ?? 'gpt-4o-mini', 'gpt-5'); ?>>
+                                    GPT-5 (Next-Gen - $8.00/$24.00)
                                 </option>
-                                <option value="gpt-4.1" <?php selected($options['openai_model'] ?? 'o4-mini', 'gpt-4.1'); ?>>
-                                    GPT-4.1 (Enhanced Coding - $2.00/$8.00)
+                                <option value="gpt-5-mini" <?php selected($options['openai_model'] ?? 'gpt-4o-mini', 'gpt-5-mini'); ?>>
+                                    GPT-5 Mini (Efficient - $2.00/$6.00)
                                 </option>
-                                <option value="gpt-4o" <?php selected($options['openai_model'] ?? 'o4-mini', 'gpt-4o'); ?>>
-                                    GPT-4o (Multimodal Flagship - $2.50/$10.00)
+                                <option value="gpt-4o" <?php selected($options['openai_model'] ?? 'gpt-4o-mini', 'gpt-4o'); ?>>
+                                    GPT-4o (Multimodal - $5.00/$15.00)
                                 </option>
-                                <option value="gpt-4.5" <?php selected($options['openai_model'] ?? 'o4-mini', 'gpt-4.5'); ?>>
-                                    GPT-4.5 (Creative & Premium - $75.00/$150.00)
+                                <option value="gpt-4o-mini" <?php selected($options['openai_model'] ?? 'gpt-4o-mini', 'gpt-4o-mini'); ?>>
+                                    GPT-4o Mini (Balanced - $0.15/$0.60)
                                 </option>
-                                <option value="gpt-3.5-turbo" <?php selected($options['openai_model'] ?? 'o4-mini', 'gpt-3.5-turbo'); ?>>
-                                    GPT-3.5 Turbo (Legacy - $0.50/$1.50)
+                                <option value="gpt-3.5-turbo" <?php selected($options['openai_model'] ?? 'gpt-4o-mini', 'gpt-3.5-turbo'); ?>>
+                                    GPT-3.5 Turbo (Budget - $0.50/$1.50)
                                 </option>
                             </select>
                         </div>
@@ -719,23 +733,20 @@ if (isset($_POST['submit']) && wp_verify_nonce($_POST['hmg_ai_settings_nonce'], 
                         <div class="hmg-ai-form-group">
                             <label for="claude_model"><?php _e('Model', 'hmg-ai-blog-enhancer'); ?></label>
                             <select id="claude_model" name="claude_model" style="width: 100%;">
-                                <option value="claude-3-5-haiku-20241022" <?php selected($options['claude_model'] ?? 'claude-3-5-haiku-20241022', 'claude-3-5-haiku-20241022'); ?>>
-                                    Claude 3.5 Haiku (Fast & Affordable - $0.80/$4.00)
+                                <option value="claude-sonnet-4-20250514" <?php selected($options['claude_model'] ?? 'claude-3-5-sonnet-20241022', 'claude-sonnet-4-20250514'); ?>>
+                                    Claude 4 Sonnet (Latest - $3.00/$15.00)
                                 </option>
-                                <option value="claude-sonnet-4-20250514" <?php selected($options['claude_model'] ?? 'claude-3-5-haiku-20241022', 'claude-sonnet-4-20250514'); ?>>
-                                    Claude Sonnet 4 (High Performance - $3.00/$15.00)
+                                <option value="claude-opus-4-20250514" <?php selected($options['claude_model'] ?? 'claude-3-5-sonnet-20241022', 'claude-opus-4-20250514'); ?>>
+                                    Claude 4 Opus (Most capable - $15.00/$75.00)
                                 </option>
-                                <option value="claude-3-7-sonnet-20250219" <?php selected($options['claude_model'] ?? 'claude-3-5-haiku-20241022', 'claude-3-7-sonnet-20250219'); ?>>
-                                    Claude 3.7 Sonnet (Extended Thinking - $3.00/$15.00)
+                                <option value="claude-3-5-sonnet-20241022" <?php selected($options['claude_model'] ?? 'claude-3-5-sonnet-20241022', 'claude-3-5-sonnet-20241022'); ?>>
+                                    Claude 3.5 Sonnet (Excellent balance - $3.00/$15.00)
                                 </option>
-                                <option value="claude-opus-4-20250514" <?php selected($options['claude_model'] ?? 'claude-3-5-haiku-20241022', 'claude-opus-4-20250514'); ?>>
-                                    Claude Opus 4 (Most Intelligent - $15.00/$75.00)
+                                <option value="claude-3-5-haiku-20241022" <?php selected($options['claude_model'] ?? 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'); ?>>
+                                    Claude 3.5 Haiku (Fast & Affordable - $1.00/$5.00)
                                 </option>
-                                <option value="claude-3-5-sonnet-20241022" <?php selected($options['claude_model'] ?? 'claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022'); ?>>
-                                    Claude 3.5 Sonnet (Legacy - $3.00/$15.00)
-                                </option>
-                                <option value="claude-3-haiku-20240307" <?php selected($options['claude_model'] ?? 'claude-3-5-haiku-20241022', 'claude-3-haiku-20240307'); ?>>
-                                    Claude 3 Haiku (Legacy - $0.25/$1.25)
+                                <option value="claude-3-haiku-20240307" <?php selected($options['claude_model'] ?? 'claude-3-5-sonnet-20241022', 'claude-3-haiku-20240307'); ?>>
+                                    Claude 3 Haiku (Budget - $0.25/$1.25)
                                 </option>
                             </select>
                         </div>
@@ -855,6 +866,113 @@ if (isset($_POST['submit']) && wp_verify_nonce($_POST['hmg_ai_settings_nonce'], 
                     <p style="margin-top: 15px; font-size: 11px; color: #666;">
                         <?php _e('💡 2025 Tip: Start with the most cost-effective models (Gemini 2.5 Flash-Lite, o4-mini) for basic tasks. Use Gemini 2.5 Flash for the best balance of quality and cost. Upgrade to premium models (Claude Opus 4, GPT-4.1) only for complex reasoning and coding tasks.', 'hmg-ai-blog-enhancer'); ?>
                     </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Context-Aware AI Settings -->
+        <div class="hmg-ai-settings-section">
+            <h3><?php _e('🧠 Context-Aware AI (Brand Voice)', 'hmg-ai-blog-enhancer'); ?></h3>
+            <div class="inside">
+                <div class="hmg-ai-form-group">
+                    <label>
+                        <input type="checkbox" 
+                               name="use_brand_context" 
+                               id="use_brand_context"
+                               value="1" 
+                               <?php checked($options['use_brand_context'] ?? false); ?> />
+                        <?php _e('Enable Context-Aware AI', 'hmg-ai-blog-enhancer'); ?>
+                    </label>
+                    <p class="description"><?php _e('When enabled, AI will analyze your existing content to learn your brand voice and apply it to all generated content.', 'hmg-ai-blog-enhancer'); ?></p>
+                </div>
+                
+                <div id="brand-profile-section" style="margin-top: 20px; <?php echo ($options['use_brand_context'] ?? false) ? '' : 'display:none;'; ?>">
+                    <?php
+                    // Get existing brand profile
+                    $brand_profile = get_option('hmg_ai_brand_profile', array());
+                    ?>
+                    
+                    <?php if (!empty($brand_profile)): ?>
+                        <!-- Display existing profile -->
+                        <div class="hmg-ai-info-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <h4 style="margin-top: 0; color: white;">✨ <?php _e('Current Brand Profile', 'hmg-ai-blog-enhancer'); ?></h4>
+                            <?php if (isset($brand_profile['tone'])): ?>
+                                <p><strong><?php _e('Tone:', 'hmg-ai-blog-enhancer'); ?></strong>
+                                    <?php echo ucfirst($brand_profile['tone']['primary_formality'] ?? 'balanced'); ?>,
+                                    <?php echo ucfirst($brand_profile['tone']['primary_emotion'] ?? 'neutral'); ?>,
+                                    <?php echo str_replace('_', ' ', ucfirst($brand_profile['tone']['primary_perspective'] ?? 'third_person')); ?>
+                                </p>
+                            <?php endif; ?>
+                            <?php if (isset($brand_profile['style'])): ?>
+                                <p><strong><?php _e('Style:', 'hmg-ai-blog-enhancer'); ?></strong>
+                                    <?php echo ucfirst($brand_profile['style']['primary_style'] ?? 'balanced'); ?> writing
+                                    (avg <?php echo $brand_profile['style']['avg_sentence_length'] ?? 20; ?> words/sentence)
+                                </p>
+                            <?php endif; ?>
+                            <?php if (isset($brand_profile['vocabulary']['signature_words']) && !empty($brand_profile['vocabulary']['signature_words'])): ?>
+                                <p><strong><?php _e('Signature Words:', 'hmg-ai-blog-enhancer'); ?></strong>
+                                    <?php echo implode(', ', array_slice($brand_profile['vocabulary']['signature_words'], 0, 5)); ?>
+                                </p>
+                            <?php endif; ?>
+                            <?php if (isset($brand_profile['last_updated'])): ?>
+                                <p style="margin-bottom: 0; font-size: 11px; opacity: 0.9;">
+                                    <?php _e('Last updated:', 'hmg-ai-blog-enhancer'); ?> <?php echo human_time_diff(strtotime($brand_profile['last_updated']), current_time('timestamp')) . ' ago'; ?>
+                                </p>
+                            <?php endif; ?>
+                        </div>
+                    <?php else: ?>
+                        <!-- No profile yet -->
+                        <div class="hmg-ai-info-box" style="background: #f8f9fa; border-left: 4px solid #5E9732;">
+                            <h4 style="margin-top: 0;">📝 <?php _e('No Brand Profile Yet', 'hmg-ai-blog-enhancer'); ?></h4>
+                            <p><?php _e('Click "Analyze Brand Voice" to scan your existing content and create a brand profile.', 'hmg-ai-blog-enhancer'); ?></p>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <!-- Analysis Controls -->
+                    <div style="margin-top: 20px;">
+                        <div class="hmg-ai-form-group" style="display: flex; align-items: center; gap: 15px;">
+                            <button type="button" class="button button-primary hmg-ai-analyze-brand" style="padding: 8px 20px;">
+                                <span class="dashicons dashicons-search" style="margin-right: 5px; margin-top: 2px;"></span>
+                                <?php _e('Analyze Brand Voice', 'hmg-ai-blog-enhancer'); ?>
+                            </button>
+                            
+                            <?php if (!empty($brand_profile)): ?>
+                                <button type="button" class="button hmg-ai-clear-profile" style="padding: 8px 15px;">
+                                    <span class="dashicons dashicons-trash" style="margin-right: 5px; margin-top: 2px;"></span>
+                                    <?php _e('Clear Profile', 'hmg-ai-blog-enhancer'); ?>
+                                </button>
+                            <?php endif; ?>
+                            
+                            <div class="hmg-ai-form-group" style="margin: 0; flex: 1; max-width: 200px;">
+                                <select id="analysis_post_count" name="analysis_post_count" style="width: 100%;">
+                                    <option value="5"><?php _e('Analyze 5 posts', 'hmg-ai-blog-enhancer'); ?></option>
+                                    <option value="10" selected><?php _e('Analyze 10 posts', 'hmg-ai-blog-enhancer'); ?></option>
+                                    <option value="20"><?php _e('Analyze 20 posts', 'hmg-ai-blog-enhancer'); ?></option>
+                                    <option value="50"><?php _e('Analyze 50 posts', 'hmg-ai-blog-enhancer'); ?></option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div id="hmg-ai-analysis-status" style="margin-top: 15px; display: none;">
+                            <!-- Analysis status will be shown here -->
+                        </div>
+                        
+                        <p class="description" style="margin-top: 10px;">
+                            <?php _e('💡 The analysis will scan your recent published posts to understand your writing style, tone, vocabulary, and content patterns.', 'hmg-ai-blog-enhancer'); ?>
+                        </p>
+                    </div>
+                    
+                    <?php if (!empty($brand_profile['guidelines'])): ?>
+                        <!-- Display content guidelines -->
+                        <div style="margin-top: 25px; padding: 15px; background: #f0f0f0; border-radius: 5px;">
+                            <h4 style="margin-top: 0;">📋 <?php _e('Content Guidelines', 'hmg-ai-blog-enhancer'); ?></h4>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <?php foreach ($brand_profile['guidelines'] as $guideline): ?>
+                                    <li style="margin-bottom: 5px;"><?php echo esc_html($guideline); ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

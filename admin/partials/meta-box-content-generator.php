@@ -268,6 +268,48 @@ $has_audio_provider = !empty($elevenlabs_key);
             </div>
         </div>
         <br />
+        <!-- AI Provider Selection -->
+        <?php if ($has_ai_provider): ?>
+        <div class="hmg-ai-provider-selection">
+            <h4><?php _e('AI Provider', 'hmg-ai-blog-enhancer'); ?></h4>
+            <select id="hmg-ai-provider-select" class="hmg-ai-select" style="width: 100%; margin-bottom: 10px;">
+                <option value="auto"><?php _e('Auto (Use priority settings)', 'hmg-ai-blog-enhancer'); ?></option>
+                <?php if (!empty($gemini_key)): ?>
+                    <option value="gemini"><?php _e('Google Gemini', 'hmg-ai-blog-enhancer'); ?></option>
+                <?php endif; ?>
+                <?php if (!empty($openai_key)): ?>
+                    <option value="openai"><?php _e('OpenAI GPT', 'hmg-ai-blog-enhancer'); ?></option>
+                <?php endif; ?>
+                <?php if (!empty($claude_key)): ?>
+                    <option value="claude"><?php _e('Anthropic Claude', 'hmg-ai-blog-enhancer'); ?></option>
+                <?php endif; ?>
+            </select>
+            <p class="description" style="margin-top: 5px; font-size: 11px;">
+                <?php _e('Select which AI provider to use for content generation', 'hmg-ai-blog-enhancer'); ?>
+            </p>
+        </div>
+        <?php endif; ?>
+        
+        <!-- Insert Summarize Buttons -->
+        <div class="hmg-ai-shortcodes-section">
+            <h4>
+                <span class="dashicons dashicons-admin-links"></span>
+                <?php _e('Summarize Buttons', 'hmg-ai-blog-enhancer'); ?>
+            </h4>
+            <div class="hmg-ai-summarize-options">
+                <button type="button" class="button button-primary hmg-ai-insert-shortcode" data-shortcode="[hmg_ai_summarize]">
+                    <span class="dashicons dashicons-plus-alt2"></span>
+                    <?php _e('Insert', 'hmg-ai-blog-enhancer'); ?>
+                </button>
+                <p class="description">
+                    <?php _e('Add AI summarize buttons to your post', 'hmg-ai-blog-enhancer'); ?>
+                </p>
+                <div class="hmg-ai-shortcode-preview">
+                    <code>[hmg_ai_summarize]</code>
+                </div>
+            </div>
+        </div>
+        
         <!-- Quick Settings -->
         <div class="hmg-ai-quick-settings">
             <h4><?php _e('Quick Settings', 'hmg-ai-blog-enhancer'); ?></h4>

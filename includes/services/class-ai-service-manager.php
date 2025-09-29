@@ -51,6 +51,15 @@ class HMG_AI_Service_Manager {
      * @var      array    $options    Plugin options.
      */
     private $options;
+    
+    /**
+     * Context Analyzer instance
+     * 
+     * @since    1.2.0
+     * @access   private
+     * @var      HMG_AI_Context_Analyzer    $context_analyzer    Context analyzer instance.
+     */
+    private $context_analyzer;
 
     /**
      * Initialize the AI service manager
@@ -61,6 +70,12 @@ class HMG_AI_Service_Manager {
         $this->auth_service = new HMG_AI_Auth_Service();
         $this->options = get_option('hmg_ai_blog_enhancer_options', array());
         $this->init_providers();
+        
+        // Initialize context analyzer if enabled
+        if ($this->options['use_brand_context'] ?? false) {
+            require_once(HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-context-analyzer.php');
+            $this->context_analyzer = new HMG_AI_Context_Analyzer();
+        }
     }
 
     /**
@@ -227,8 +242,14 @@ class HMG_AI_Service_Manager {
         }
 
         try {
+            // Add brand context if available
+            $generation_options = array();
+            if ($this->context_analyzer && ($this->options['use_brand_context'] ?? false)) {
+                $generation_options['brand_context'] = $this->context_analyzer->get_ai_context();
+            }
+            
             $start_time = microtime(true);
-            $result = $provider->generate_content($content_type, $content, $post_id);
+            $result = $provider->generate_content($content_type, $content, $post_id, $generation_options);
             $generation_time = microtime(true) - $start_time;
 
             if ($result['success']) {

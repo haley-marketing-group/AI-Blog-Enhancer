@@ -1790,3 +1790,257 @@ mark.hmg-ai-highlight {
 @keyframes hmgSpin {
     to { transform: rotate(360deg); }
 }  
+/* Summarize Buttons - Minimal Design */
+.hmg-ai-summarize-container {
+    margin: 30px 0;
+    padding: 20px 15px;
+    background: transparent;
+    border: none;
+}
+
+.hmg-ai-summarize-container[data-align="center"] {
+    text-align: center;
+}
+
+.hmg-ai-summarize-container[data-align="right"] {
+    text-align: right;
+}
+
+.hmg-ai-summarize-label {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #000000 !important;
+}
+
+.hmg-ai-summarize-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.hmg-ai-summarize-container[data-align="center"] .hmg-ai-summarize-buttons {
+    justify-content: center;
+}
+
+.hmg-ai-summarize-container[data-align="right"] .hmg-ai-summarize-buttons {
+    justify-content: flex-end;
+}
+
+/* Minimal Button Style */
+.hmg-ai-summarize-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    border-radius: 3px;
+    color: #ffffff !important;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    border: none;
+}
+
+.hmg-ai-summarize-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+    color: white !important;
+    text-decoration: none;
+    opacity: 0.92;
+}
+
+.hmg-ai-service-icon {
+    display: none;
+}
+
+.hmg-ai-service-name {
+    font-weight: 500;
+    font-size: 14px;
+}
+
+/* Service-specific colors - flat */
+.hmg-ai-summarize-chatgpt {
+    background: #74aa9c;
+}
+
+.hmg-ai-summarize-chatgpt:hover {
+    background: #5c8a7e;
+}
+
+.hmg-ai-summarize-perplexity {
+    background: #20808d;
+}
+
+.hmg-ai-summarize-perplexity:hover {
+    background: #1a6a75;
+}
+
+.hmg-ai-summarize-claude {
+    background: #d97757;
+}
+
+.hmg-ai-summarize-claude:hover {
+    background: #c26545;
+}
+
+.hmg-ai-summarize-gemini {
+    background: #4285f4;
+}
+
+.hmg-ai-summarize-gemini:hover {
+    background: #3367d6;
+}
+
+/* Link Style - Professional */
+.hmg-ai-summarize-link {
+    display: inline-block;
+    padding: 10px 16px;
+    margin-right: 16px;
+    color: #667eea;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 8px;
+    background: rgba(102, 126, 234, 0.08);
+    position: relative;
+}
+
+.hmg-ai-summarize-link:hover {
+    color: #764ba2;
+    background: rgba(118, 75, 162, 0.12);
+    transform: translateX(4px);
+}
+
+/* Mobile responsive - Enhanced */
+@media (max-width: 768px) {
+    .hmg-ai-summarize-container {
+        padding: 20px 15px;
+        margin: 30px 0;
+    }
+    
+    .hmg-ai-summarize-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .hmg-ai-summarize-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 14px 24px;
+    }
+    
+    .hmg-ai-summarize-link {
+        display: block;
+        margin-right: 0;
+        margin-bottom: 12px;
+        text-align: center;
+    }
+    
+    .hmg-ai-summarize-label {
+        font-size: 14px;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .hmg-ai-summarize-container {
+        background: transparent;
+        border: none;
+    }
+    
+    .hmg-ai-summarize-label {
+        color: #000000;
+    }
+    
+    .hmg-ai-summarize-link {
+        background: rgba(102, 126, 234, 0.15);
+    }
+}
+
+/* Minimal theme - Clean Professional */
+.hmg-ai-summarize-minimal {
+    background: transparent;
+    border: none;
+    padding: 20px 0;
+    box-shadow: none;
+}
+
+.hmg-ai-summarize-minimal::before {
+    display: none;
+}
+
+.hmg-ai-summarize-minimal .hmg-ai-summarize-label {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 12px;
+}
+
+.hmg-ai-summarize-minimal .hmg-ai-summarize-label::before {
+    display: none;
+}
+
+.hmg-ai-summarize-minimal .hmg-ai-summarize-btn {
+    background: #ffffff !important;
+    color: #374151 !important;
+    border: 1.5px solid #e5e7eb;
+    padding: 10px 20px;
+    font-size: 13px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.hmg-ai-summarize-minimal .hmg-ai-summarize-btn:hover {
+    border-color: #667eea;
+    background: #667eea !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+}
+
+/* Compact Style */
+.hmg-ai-summarize-compact {
+    padding: 20px;
+    margin: 25px 0;
+}
+
+.hmg-ai-summarize-compact .hmg-ai-summarize-buttons {
+    gap: 8px;
+}
+
+.hmg-ai-summarize-compact .hmg-ai-summarize-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    border-radius: 8px;
+}
+
+.hmg-ai-summarize-compact .hmg-ai-service-icon {
+    font-size: 16px;
+}
+
+/* Subtle fade-in animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.hmg-ai-summarize-container {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Focus styles for accessibility */
+.hmg-ai-summarize-btn:focus {
+    outline: 3px solid rgba(102, 126, 234, 0.5);
+    outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+    .hmg-ai-summarize-container {
+        display: none;
+    }
+}
