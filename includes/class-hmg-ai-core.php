@@ -132,6 +132,12 @@ class HMG_AI_Core {
         require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-claude-service.php';
         require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/services/class-ai-service-manager.php';
 
+        /**
+         * Load CTA Manager classes
+         */
+        require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/class-cta-manager.php';
+        require_once HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'includes/class-cta-metabox.php';
+
         $this->loader = new HMG_AI_Loader();
     }
 
@@ -160,6 +166,10 @@ class HMG_AI_Core {
     private function define_admin_hooks() {
         $plugin_admin = new HMG_AI_Admin($this->get_plugin_name(), $this->get_version());
 
+        // Initialize CTA Manager
+        $cta_manager = new HMG_AI_CTA_Manager($this->get_plugin_name(), $this->get_version());
+        $cta_metabox = new HMG_AI_CTA_Metabox($cta_manager);
+
         // Enqueue admin scripts and styles
         $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_styles');
         $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
@@ -171,6 +181,10 @@ class HMG_AI_Core {
         // Add meta boxes for posts/pages
         $this->loader->add_action('add_meta_boxes', $plugin_admin, 'add_meta_boxes');
         $this->loader->add_action('save_post', $plugin_admin, 'save_post_meta', 10, 2);
+        
+        // CTA Metabox
+        $this->loader->add_action('add_meta_boxes', $cta_metabox, 'add_metabox');
+        $this->loader->add_action('save_post', $cta_metabox, 'save_metabox');
         
         // Ensure meta boxes work with block editor
         $this->loader->add_action('enqueue_block_editor_assets', $plugin_admin, 'enqueue_block_editor_assets');
@@ -227,6 +241,9 @@ class HMG_AI_Core {
      */
     private function define_public_hooks() {
         $plugin_public = new HMG_AI_Public($this->get_plugin_name(), $this->get_version());
+        
+        // Initialize CTA Manager for frontend
+        $cta_manager = new HMG_AI_CTA_Manager($this->get_plugin_name(), $this->get_version());
 
         // Enqueue public scripts and styles
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_styles');
@@ -252,6 +269,9 @@ class HMG_AI_Core {
 
         // Add heading IDs for TOC navigation
         $this->loader->add_filter('the_content', $plugin_public, 'add_heading_ids', 5);
+        
+        // Add CTA to post content
+        $this->loader->add_filter('the_content', $cta_manager, 'filter_content', 20);
 
         // Add structured data for FAQ
         $this->loader->add_action('wp_head', $plugin_public, 'add_faq_structured_data');

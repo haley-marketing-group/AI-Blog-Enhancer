@@ -1,0 +1,288 @@
+/**
+ * CTA Styles for HMG AI Blog Enhancer
+ * 
+ * @since 1.1.0
+ */
+
+/* CTA Box Container */
+.hmg-cta-box {
+    display: block;
+    margin: 2em 0;
+    padding: 1.5em;
+    color: #333;
+    background: #f7f7f7;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1em;
+    line-height: 1.6;
+    position: relative;
+}
+
+/* Background Image Style */
+.hmg-cta-box.hmg-background-image {
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    min-height: 200px;
+    color: #fff;
+}
+
+.hmg-cta-box.hmg-background-image .hmg-cta-box-title,
+.hmg-cta-box.hmg-background-image .hmg-cta-box-content {
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Flexbox Layout */
+.hmg-cta-box-flex-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 2em;
+}
+
+/* Content Wrapper */
+.hmg-cta-box-content-wrapper {
+    flex: 1;
+}
+
+/* Header Section */
+.hmg-cta-box-header {
+    margin-bottom: 1em;
+}
+
+.hmg-cta-box-title {
+    margin: 0 0 0.5em 0;
+    font-size: 1.5em;
+    font-weight: 600;
+    line-height: 1.3;
+    color: inherit;
+}
+
+/* Content Section */
+.hmg-cta-box-content {
+    margin-bottom: 1.5em;
+}
+
+.hmg-cta-box-content p {
+    margin: 0 0 1em 0;
+}
+
+.hmg-cta-box-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* Footer/Button Section */
+.hmg-cta-box-footer {
+    margin-top: 1.5em;
+}
+
+/* CTA Images */
+.hmg-cta-box-image {
+    flex: 0 0 auto;
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+/* Image Alignment - Left */
+.hmg-cta-box-flex-wrapper.hmg-alignleft {
+    flex-direction: row;
+}
+
+.hmg-alignleft .hmg-cta-box-image {
+    max-width: 200px;
+}
+
+/* Image Alignment - Right */
+.hmg-cta-box-flex-wrapper.hmg-alignright {
+    flex-direction: row-reverse;
+}
+
+.hmg-alignright .hmg-cta-box-image {
+    max-width: 200px;
+}
+
+/* Image Alignment - Top */
+.hmg-cta-box-flex-wrapper.hmg-aligntop {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.hmg-aligntop .hmg-cta-box-image {
+    width: 100%;
+    max-width: none;
+    margin-bottom: 1.5em;
+}
+
+/* Image Alignment - Bottom */
+.hmg-cta-box-flex-wrapper.hmg-alignbottom {
+    flex-direction: column-reverse;
+    align-items: stretch;
+}
+
+.hmg-alignbottom .hmg-cta-box-image {
+    width: 100%;
+    max-width: none;
+    margin-top: 1.5em;
+}
+
+/* CTA Buttons */
+.hmg-cta-button {
+    display: inline-block;
+    padding: 0.75em 1.5em;
+    font-size: 1em;
+    font-weight: 500;
+    text-decoration: none;
+    text-align: center;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+/* Default Button Style */
+.hmg-cta-btn-default {
+    color: #fff;
+    background-color: #0073e6;
+    border: 2px solid #0073e6;
+}
+
+.hmg-cta-btn-default:hover {
+    color: #fff;
+    background-color: #005bb5;
+    border-color: #005bb5;
+    text-decoration: none;
+}
+
+/* Primary Button Style */
+.hmg-cta-btn-primary {
+    color: #fff;
+    background-color: #28a745;
+    border: 2px solid #28a745;
+}
+
+.hmg-cta-btn-primary:hover {
+    color: #fff;
+    background-color: #218838;
+    border-color: #218838;
+}
+
+/* Secondary Button Style */
+.hmg-cta-btn-secondary {
+    color: #333;
+    background-color: #fff;
+    border: 2px solid #333;
+}
+
+.hmg-cta-btn-secondary:hover {
+    color: #fff;
+    background-color: #333;
+    border-color: #333;
+}
+
+/* Outline Button Style */
+.hmg-cta-btn-outline {
+    color: #0073e6;
+    background-color: transparent;
+    border: 2px solid #0073e6;
+}
+
+.hmg-cta-btn-outline:hover {
+    color: #fff;
+    background-color: #0073e6;
+    border-color: #0073e6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hmg-cta-box {
+        padding: 1.25em;
+    }
+
+    .hmg-cta-box-title {
+        font-size: 1.3em;
+    }
+
+    .hmg-cta-box-flex-wrapper {
+        gap: 1.5em;
+    }
+
+    /* Stack images on mobile for left/right alignment */
+    .hmg-cta-box-flex-wrapper.hmg-alignleft,
+    .hmg-cta-box-flex-wrapper.hmg-alignright {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .hmg-alignleft .hmg-cta-box-image,
+    .hmg-alignright .hmg-cta-box-image {
+        max-width: 100%;
+        margin: 0 0 1.5em 0;
+    }
+
+    .hmg-cta-button {
+        display: block;
+        width: 100%;
+        padding: 1em;
+    }
+}
+
+@media (max-width: 480px) {
+    .hmg-cta-box {
+        padding: 1em;
+        margin: 1.5em 0;
+    }
+
+    .hmg-cta-box-title {
+        font-size: 1.2em;
+    }
+
+    .hmg-cta-box-content {
+        font-size: 0.95em;
+    }
+}
+
+/* Utility Classes */
+.clearfix::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* Dark Theme Support */
+@media (prefers-color-scheme: dark) {
+    .hmg-cta-box {
+        color: #e0e0e0;
+        background: #2a2a2a;
+        border-color: #444;
+    }
+
+    .hmg-cta-box-title {
+        color: #fff;
+    }
+
+    .hmg-cta-btn-secondary {
+        color: #e0e0e0;
+        background-color: #2a2a2a;
+        border-color: #e0e0e0;
+    }
+
+    .hmg-cta-btn-secondary:hover {
+        color: #2a2a2a;
+        background-color: #e0e0e0;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .hmg-cta-box {
+        border: 1px solid #000;
+        background: #fff !important;
+        color: #000 !important;
+    }
+
+    .hmg-cta-button {
+        border: 1px solid #000;
+        text-decoration: underline;
+    }
+}

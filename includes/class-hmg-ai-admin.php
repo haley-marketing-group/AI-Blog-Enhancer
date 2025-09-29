@@ -117,6 +117,14 @@ class HMG_AI_Admin {
             false
         );
 
+        // Enqueue color picker and media uploader for CTA settings page
+        $screen = get_current_screen();
+        if ($screen && ($screen->id === 'hmg-ai-blog-enhancer_page_hmg-ai-blog-enhancer-cta' || $screen->id === 'post' || $screen->id === 'page')) {
+            wp_enqueue_style('wp-color-picker');
+            wp_enqueue_script('wp-color-picker');
+            wp_enqueue_media();
+        }
+
         // Localize script for AJAX
         wp_localize_script(
             $this->plugin_name,
@@ -259,6 +267,16 @@ class HMG_AI_Admin {
             'hmg-ai-performance',
             array($this, 'display_performance_page')
         );
+
+        // CTA Manager submenu
+        add_submenu_page(
+            'hmg-ai-blog-enhancer',
+            __('CTA Manager', 'hmg-ai-blog-enhancer'),
+            __('CTA Manager', 'hmg-ai-blog-enhancer'),
+            'manage_options',
+            'hmg-ai-blog-enhancer-cta',
+            array($this, 'display_cta_settings_page')
+        );
     }
     
     /**
@@ -268,6 +286,15 @@ class HMG_AI_Admin {
      */
     public function display_performance_page() {
         include HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'admin/partials/performance-dashboard.php';
+    }
+
+    /**
+     * Display the CTA settings page
+     *
+     * @since    1.1.0
+     */
+    public function display_cta_settings_page() {
+        include HMG_AI_BLOG_ENHANCER_PLUGIN_DIR . 'admin/partials/cta-settings-display.php';
     }
 
     /**
