@@ -151,6 +151,10 @@ $usage_stats = wp_parse_args($usage_stats, array(
                     <a href="<?php echo admin_url('edit.php'); ?>" class="hmg-ai-button secondary">
                         <?php _e('Enhance Existing Posts', 'hmg-ai-blog-enhancer'); ?>
                     </a>
+                    <button type="button" class="hmg-ai-button hmg-ai-test-providers" style="background: #667eea; color: white;">
+                        <span class="dashicons dashicons-admin-plugins" style="margin-right: 5px;"></span>
+                        <?php _e('Test All Providers', 'hmg-ai-blog-enhancer'); ?>
+                    </button>
                     <a href="<?php echo admin_url('admin.php?page=hmg-ai-settings'); ?>" class="hmg-ai-button accent">
                         <?php _e('Plugin Settings', 'hmg-ai-blog-enhancer'); ?>
                     </a>

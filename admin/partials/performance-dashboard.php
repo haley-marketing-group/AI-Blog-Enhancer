@@ -576,12 +576,20 @@ jQuery(document).ready(function($) {
                         location.reload();
                     }, 1000);
                 } else {
-                    alert('Error: ' + (response.data.message || 'Failed to save settings'));
+                    // Use modal for error
+                    HMGAIAdmin.showNotice(
+                        'Error: ' + (response.data.message || 'Failed to save settings'),
+                        'error'
+                    );
                     $button.prop('disabled', false).html('<span class="dashicons dashicons-saved"></span> Save Performance Settings');
                 }
             },
             error: function() {
-                alert('Failed to save settings');
+                // Use modal for error
+                HMGAIAdmin.showNotice(
+                    'Failed to save settings. Please check your connection and try again.',
+                    'error'
+                );
                 $button.prop('disabled', false).html('<span class="dashicons dashicons-saved"></span> Save Performance Settings');
             }
         });
@@ -611,12 +619,20 @@ jQuery(document).ready(function($) {
                         location.reload();
                     }, 1500);
                 } else {
-                    alert('Error: ' + (response.data.message || 'Optimization failed'));
+                    // Use modal for error
+                    HMGAIAdmin.showNotice(
+                        'Error: ' + (response.data.message || 'Optimization failed'),
+                        'error'
+                    );
                     $button.prop('disabled', false).html('<span class="dashicons dashicons-database"></span> Optimize Database');
                 }
             },
             error: function() {
-                alert('Optimization failed');
+                // Use modal for error
+                HMGAIAdmin.showNotice(
+                    'Optimization failed. Please check your connection and try again.',
+                    'error'
+                );
                 $button.prop('disabled', false).html('<span class="dashicons dashicons-database"></span> Optimize Database');
             }
         });
@@ -646,12 +662,20 @@ jQuery(document).ready(function($) {
                         location.reload();
                     }, 1500);
                 } else {
-                    alert('Error: ' + (response.data.message || 'Failed to clear cache'));
+                    // Use modal for error
+                    HMGAIAdmin.showNotice(
+                        'Error: ' + (response.data.message || 'Failed to clear cache'),
+                        'error'
+                    );
                     $button.prop('disabled', false).html('<span class="dashicons dashicons-trash"></span> Clear All Caches');
                 }
             },
             error: function() {
-                alert('Failed to clear cache');
+                // Use modal for error
+                HMGAIAdmin.showNotice(
+                    'Failed to clear cache. Please check your connection and try again.',
+                    'error'
+                );
                 $button.prop('disabled', false).html('<span class="dashicons dashicons-trash"></span> Clear All Caches');
             }
         });

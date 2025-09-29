@@ -188,6 +188,7 @@ class HMG_AI_Core {
         $this->loader->add_action('wp_ajax_hmg_validate_api_key', $plugin_admin, 'ajax_validate_api_key');
         $this->loader->add_action('wp_ajax_hmg_get_usage_stats', $plugin_admin, 'ajax_get_usage_stats');
         $this->loader->add_action('wp_ajax_hmg_test_ai_providers', $plugin_admin, 'ajax_test_ai_providers');
+        $this->loader->add_action('wp_ajax_hmg_test_single_provider', $plugin_admin, 'ajax_test_single_provider');
         $this->loader->add_action('wp_ajax_hmg_save_ai_content', $plugin_admin, 'ajax_save_ai_content');
         $this->loader->add_action('wp_ajax_hmg_delete_content', $plugin_admin, 'ajax_delete_content');
         $this->loader->add_action('wp_ajax_hmg_ai_refresh_voices', $plugin_admin, 'ajax_refresh_voices');

@@ -287,11 +287,10 @@ Content:
         $prompt = str_replace('{content}', $content, $base_prompt);
 
         // Prepare API request
-        $max_tokens_field = 'max_tokens';
-        // Use max_completion_tokens for newer models
-        if (in_array($this->selected_model, ['gpt-5-ultra', 'gpt-5', 'gpt-5-mini', 'gpt-4o', 'gpt-4o-mini', 'o1-mini', 'o1-preview'])) {
-            $max_tokens_field = 'max_completion_tokens';
-        }
+        // OpenAI now requires max_completion_tokens for most models
+        // Only use max_tokens for legacy models
+        $legacy_models = ['text-davinci-003', 'text-davinci-002', 'code-davinci-002'];
+        $max_tokens_field = in_array($this->selected_model, $legacy_models) ? 'max_tokens' : 'max_completion_tokens';
         
         $request_body = array(
             'model' => $this->selected_model,
@@ -483,11 +482,10 @@ Content:
         }
 
         // Test with a simple completion
-        $max_tokens_field = 'max_tokens';
-        // Use max_completion_tokens for newer models
-        if (in_array($this->selected_model, ['gpt-5-ultra', 'gpt-5', 'gpt-5-mini', 'gpt-4o', 'gpt-4o-mini', 'o1-mini', 'o1-preview'])) {
-            $max_tokens_field = 'max_completion_tokens';
-        }
+        // OpenAI now requires max_completion_tokens for most models
+        // Only use max_tokens for legacy models
+        $legacy_models = ['text-davinci-003', 'text-davinci-002', 'code-davinci-002'];
+        $max_tokens_field = in_array($this->selected_model, $legacy_models) ? 'max_tokens' : 'max_completion_tokens';
         
         $response = wp_remote_post(
             $this->api_base_url . '/chat/completions',

@@ -79,8 +79,8 @@
             const $confirmBtn = $modal.find('.hmg-ai-modal-confirm');
             const $cancelBtn = $modal.find('.hmg-ai-modal-cancel');
             
-            // Set content
-            $modal.find('.hmg-ai-modal-title').text(title);
+            // Set content - use .html() for title to render HTML elements like dashicons
+            $modal.find('.hmg-ai-modal-title').html(title);
             $modal.find('.hmg-ai-modal-message').html(message);
             $confirmBtn.text(confirmText);
             $confirmBtn.attr('class', 'button ' + confirmClass);
@@ -955,8 +955,11 @@
             e.preventDefault();
             const $button = $(e.currentTarget);
             const originalText = $button.text();
+            const originalIcon = $button.find('.dashicons').attr('class');
             
-            $button.prop('disabled', true).text('Testing...');
+            // Update button state
+            $button.prop('disabled', true)
+                   .html('<span class="dashicons dashicons-update hmg-ai-spinning"></span> Testing All Providers...');
             
             $.ajax({
                 url: hmg_ai_ajax.ajax_url,
@@ -966,25 +969,142 @@
                     nonce: hmg_ai_ajax.nonce
                 },
                 success: (response) => {
-                    if (response.success) {
-                        let message = 'Provider Test Results:\n\n';
-                        for (let provider in response.data) {
-                            const result = response.data[provider];
-                            message += `${result.name}: ${result.success ? '✅ Connected' : '❌ Failed'}\n`;
-                            if (result.message) {
-                                message += `  ${result.message}\n`;
+                    if (response.success && response.data) {
+                        // Build HTML for test results
+                        let modalContent = '<div class="hmg-ai-provider-test-results">';
+                        let allSuccess = true;
+                        let hasProviders = false;
+                        
+                        // Check if we have the providers data
+                        const providers = response.data.providers || response.data;
+                        
+                        for (let provider in providers) {
+                            if (providers.hasOwnProperty(provider)) {
+                                hasProviders = true;
+                                const result = providers[provider];
+                                const isSuccess = result.success;
+                                if (!isSuccess) allSuccess = false;
+                                
+                                modalContent += `
+                                    <div class="provider-test-item ${isSuccess ? 'success' : 'failed'}">
+                                        <div class="provider-header">
+                                            <span class="provider-icon dashicons ${isSuccess ? 'dashicons-yes-alt' : 'dashicons-warning'}"></span>
+                                            <span class="provider-name">${result.name || provider}</span>
+                                            <span class="provider-status ${isSuccess ? 'status-success' : 'status-failed'}">
+                                                ${isSuccess ? 'Connected' : 'Failed'}
+                                            </span>
+                                        </div>
+                                        ${result.message ? `<div class="provider-message">${result.message}</div>` : ''}
+                                    </div>
+                                `;
                             }
                         }
-                        alert(message);
+                        
+                        if (!hasProviders) {
+                            modalContent += '<p>No providers configured. Please add API keys in the Settings page.</p>';
+                        }
+                        
+                        modalContent += '</div>';
+                        
+                        // Add styling
+                        modalContent += `
+                            <style>
+                                .hmg-ai-provider-test-results {
+                                    padding: 20px 0;
+                                }
+                                .provider-test-item {
+                                    background: #f8f9fa;
+                                    border-radius: 8px;
+                                    padding: 15px;
+                                    margin-bottom: 15px;
+                                    border-left: 4px solid #ddd;
+                                    transition: all 0.3s ease;
+                                }
+                                .provider-test-item.success {
+                                    border-left-color: #00a32a;
+                                    background: #edfaef;
+                                }
+                                .provider-test-item.failed {
+                                    border-left-color: #d63638;
+                                    background: #fcf0f1;
+                                }
+                                .provider-header {
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 10px;
+                                }
+                                .provider-icon {
+                                    font-size: 20px;
+                                }
+                                .provider-icon.dashicons-yes-alt {
+                                    color: #00a32a;
+                                }
+                                .provider-icon.dashicons-warning {
+                                    color: #d63638;
+                                }
+                                .provider-name {
+                                    font-weight: 600;
+                                    flex-grow: 1;
+                                }
+                                .provider-status {
+                                    padding: 4px 12px;
+                                    border-radius: 4px;
+                                    font-size: 12px;
+                                    font-weight: 500;
+                                }
+                                .status-success {
+                                    background: #00a32a;
+                                    color: white;
+                                }
+                                .status-failed {
+                                    background: #d63638;
+                                    color: white;
+                                }
+                                .provider-message {
+                                    margin-top: 10px;
+                                    padding-top: 10px;
+                                    border-top: 1px solid rgba(0,0,0,0.1);
+                                    color: #666;
+                                    font-size: 14px;
+                                }
+                            </style>
+                        `;
+                        
+                        // Show modal with results
+                        const title = allSuccess ? 
+                            '<span class="dashicons dashicons-yes-alt" style="color: #00a32a;"></span> All Providers Connected!' : 
+                            '<span class="dashicons dashicons-warning" style="color: #d63638;"></span> Provider Test Results';
+                        
+                        this.showModal(
+                            title,
+                            modalContent,
+                            null,
+                            'Close',
+                            allSuccess ? 'button-primary' : 'button'
+                        );
                     } else {
-                        alert('Test failed: ' + response.data);
+                        // Error in response
+                        this.showNotice(
+                            'Test failed: ' + (response.data?.message || response.data || 'Unknown error'),
+                            'error'
+                        );
                     }
                 },
-                error: () => {
-                    alert('Failed to test providers. Please check your connection.');
+                error: (xhr, status, error) => {
+                    this.showNotice(
+                        'Failed to test providers. Please check your connection and try again.',
+                        'error'
+                    );
+                    console.error('Provider test error:', {xhr, status, error});
                 },
                 complete: () => {
-                    $button.prop('disabled', false).text(originalText);
+                    // Restore button state
+                    if (originalIcon) {
+                        $button.html(`<span class="${originalIcon}"></span> ${originalText}`);
+                    } else {
+                        $button.text(originalText);
+                    }
+                    $button.prop('disabled', false);
                 }
             });
         },

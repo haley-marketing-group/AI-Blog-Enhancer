@@ -297,16 +297,10 @@ $has_audio_provider = !empty($elevenlabs_key);
                 <?php _e('Summarize Buttons', 'hmg-ai-blog-enhancer'); ?>
             </h4>
             <div class="hmg-ai-summarize-options">
-                <button type="button" class="button button-primary hmg-ai-insert-shortcode" data-shortcode="[hmg_ai_summarize]">
+                <button type="button" class="button button-primary hmg-ai-insert-shortcode" data-shortcode="[hmg_ai_summarize]" title="Insert [hmg_ai_summarize] shortcode">
                     <span class="dashicons dashicons-plus-alt2"></span>
-                    <?php _e('Insert', 'hmg-ai-blog-enhancer'); ?>
+                    <?php _e('Insert Summarize Buttons', 'hmg-ai-blog-enhancer'); ?>
                 </button>
-                <p class="description">
-                    <?php _e('Add AI summarize buttons to your post', 'hmg-ai-blog-enhancer'); ?>
-                </p>
-                <div class="hmg-ai-shortcode-preview">
-                    <code>[hmg_ai_summarize]</code>
-                </div>
             </div>
         </div>
         

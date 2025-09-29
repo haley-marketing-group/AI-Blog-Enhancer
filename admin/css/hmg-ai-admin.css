@@ -200,6 +200,34 @@
     padding: 0;
 }
 
+/* === SHORTCODES SECTION STYLING === */
+.hmg-ai-shortcodes-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #e0e0e0;
+}
+
+.hmg-ai-shortcodes-section h4 {
+    margin: 0 0 12px 0;
+    color: var(--hmg-royal-blue);
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.hmg-ai-shortcodes-section h4 .dashicons {
+    font-size: 18px;
+}
+
+.hmg-ai-summarize-options .button-primary {
+    width: 100%;
+    justify-content: center;
+}
+
 .hmg-ai-meta-box h4 {
     color: var(--hmg-royal-blue);
     margin-top: 0;

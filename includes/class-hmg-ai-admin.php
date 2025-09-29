@@ -1035,6 +1035,95 @@ class HMG_AI_Admin {
     }
 
     /**
+     * AJAX handler for testing a single AI provider
+     *
+     * @since    1.0.0
+     */
+    public function ajax_test_single_provider() {
+        // Verify nonce
+        if (!check_ajax_referer('hmg-ai-ajax-nonce', 'nonce', false)) {
+            wp_send_json_error(array(
+                'message' => __('Security check failed', 'hmg-ai-blog-enhancer')
+            ));
+        }
+
+        // Check user capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array(
+                'message' => __('Insufficient permissions', 'hmg-ai-blog-enhancer')
+            ));
+        }
+
+        $provider = sanitize_text_field($_POST['provider'] ?? '');
+        
+        if (empty($provider)) {
+            wp_send_json_error(array(
+                'message' => __('No provider specified', 'hmg-ai-blog-enhancer')
+            ));
+        }
+
+        try {
+            // Get the provider instance
+            $provider_instance = null;
+            
+            switch ($provider) {
+                case 'gemini':
+                    $provider_instance = new HMG_AI_Gemini_Service();
+                    break;
+                case 'openai':
+                    $provider_instance = new HMG_AI_OpenAI_Service();
+                    break;
+                case 'claude':
+                    $provider_instance = new HMG_AI_Claude_Service();
+                    break;
+                default:
+                    wp_send_json_error(array(
+                        'message' => __('Invalid provider', 'hmg-ai-blog-enhancer')
+                    ));
+                    return;
+            }
+
+            // Test the connection
+            if (method_exists($provider_instance, 'test_connection')) {
+                $result = $provider_instance->test_connection();
+                
+                if ($result['success']) {
+                    // Also try a simple generation to fully test
+                    $test_content = "This is a test of the HMG AI Blog Enhancer plugin.";
+                    $test_response = null;
+                    
+                    if (method_exists($provider_instance, 'generate_takeaways')) {
+                        try {
+                            $test_response = $provider_instance->generate_takeaways($test_content, 1);
+                        } catch (Exception $e) {
+                            // Generation failed but connection worked
+                            $test_response = array('note' => 'Connection successful but generation test failed: ' . $e->getMessage());
+                        }
+                    }
+                    
+                    wp_send_json_success(array(
+                        'success' => true,
+                        'message' => $result['message'] ?? __('Provider connected successfully', 'hmg-ai-blog-enhancer'),
+                        'response' => $test_response
+                    ));
+                } else {
+                    wp_send_json_error(array(
+                        'message' => $result['message'] ?? __('Provider connection failed', 'hmg-ai-blog-enhancer')
+                    ));
+                }
+            } else {
+                wp_send_json_error(array(
+                    'message' => __('Provider does not support connection testing', 'hmg-ai-blog-enhancer')
+                ));
+            }
+        } catch (Exception $e) {
+            wp_send_json_error(array(
+                'message' => sprintf(__('Error testing provider: %s', 'hmg-ai-blog-enhancer'), $e->getMessage())
+            ));
+        }
+    }
+
+    /**
      * AJAX handler for deleting AI content
      *
      * @since    1.0.0
